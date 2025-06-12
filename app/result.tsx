@@ -1,5 +1,8 @@
+import { GlassCard } from "@/components/ui/GlassCard";
+import { MinimalButton } from "@/components/ui/MinimalButton";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { gameEngine } from "@/services/gameEngine";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -9,7 +12,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -31,7 +33,9 @@ interface SessionSummary {
 export default function ResultScreen() {
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
-  const [slideAnim] = useState(new Animated.Value(50));
+  const [slideAnim] = useState(new Animated.Value(30));
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? "light"];
 
   useEffect(() => {
     loadSessionSummary();
@@ -40,7 +44,7 @@ export default function ResultScreen() {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 600,
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
@@ -80,174 +84,192 @@ export default function ResultScreen() {
     return `${seconds}s`;
   };
 
-  const getScoreColor = (correct: number, total: number) => {
+  const getPerformanceLevel = (correct: number, total: number) => {
     const percentage = total > 0 ? (correct / total) * 100 : 0;
-    if (percentage >= 80) return "#4CAF50";
-    if (percentage >= 60) return "#FF9800";
-    return "#F44336";
+    if (percentage >= 80) return "Excellent";
+    if (percentage >= 60) return "Good";
+    if (percentage >= 40) return "Fair";
+    return "Keep Practicing";
   };
 
-  const getScoreEmoji = (score: number) => {
-    if (score >= 10) return "🏆";
-    if (score >= 5) return "🥉";
-    if (score >= 3) return "👏";
-    if (score >= 1) return "👍";
-    return "💪";
+  const getMotivationalMessage = (score: number) => {
+    if (score >= 10) return "Outstanding performance! You're a word master!";
+    if (score >= 5) return "Great job! Keep practicing to improve even more!";
+    if (score >= 1) return "Good effort! Every game makes you stronger!";
+    return "Don't give up! Practice makes perfect!";
   };
 
   if (!summary) {
     return (
-      <SafeAreaView style={styles.container}>
-        <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.gradient}>
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading results...</Text>
-          </View>
-        </LinearGradient>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: colors.text }]}>
+            Loading results...
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.gradient}>
-        <Animated.View
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>🎯 Game Over!</Text>
-            <Text style={styles.subtitle}>Here's how you did</Text>
-          </View>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <Animated.View
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.text }]}>
+            Game Complete
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Here's how you performed
+          </Text>
+        </View>
 
-          <ScrollView
-            style={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Main Score Card */}
-            <View style={styles.scoreCard}>
-              <Text style={styles.scoreEmoji}>
-                {getScoreEmoji(summary.correctAnswers)}
+        <ScrollView
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Main Score Card */}
+          <GlassCard style={styles.scoreCard}>
+            <View style={styles.scoreContent}>
+              <Text style={[styles.scoreNumber, { color: colors.text }]}>
+                {summary.correctAnswers}
               </Text>
-              <Text style={styles.scoreNumber}>{summary.correctAnswers}</Text>
-              <Text style={styles.scoreLabel}>Correct Answers</Text>
-              <Text style={styles.totalGames}>
+              <Text
+                style={[styles.scoreLabel, { color: colors.textSecondary }]}
+              >
+                Correct Answers
+              </Text>
+              <Text style={[styles.totalGames, { color: colors.textTertiary }]}>
                 out of {summary.totalGames} games
               </Text>
-            </View>
-
-            {/* Stats Grid */}
-            <View style={styles.statsGrid}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{summary.totalGames}</Text>
-                <Text style={styles.statLabel}>Total Games</Text>
-              </View>
-
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>
-                  {formatTime(summary.averageTime)}
+              <View style={styles.performanceIndicator}>
+                <Text style={[styles.performanceText, { color: colors.text }]}>
+                  {getPerformanceLevel(
+                    summary.correctAnswers,
+                    summary.totalGames
+                  )}
                 </Text>
-                <Text style={styles.statLabel}>Avg Time</Text>
               </View>
+            </View>
+          </GlassCard>
 
-              <View style={styles.statItem}>
-                <Text
+          {/* Stats Grid */}
+          <View style={styles.statsGrid}>
+            <GlassCard style={styles.statCard}>
+              <Text style={[styles.statNumber, { color: colors.text }]}>
+                {summary.totalGames}
+              </Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                Total Games
+              </Text>
+            </GlassCard>
+
+            <GlassCard style={styles.statCard}>
+              <Text style={[styles.statNumber, { color: colors.text }]}>
+                {formatTime(summary.averageTime)}
+              </Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                Avg Time
+              </Text>
+            </GlassCard>
+
+            <GlassCard style={styles.statCard}>
+              <Text style={[styles.statNumber, { color: colors.text }]}>
+                {summary.totalGames > 0
+                  ? Math.round(
+                      (summary.correctAnswers / summary.totalGames) * 100
+                    )
+                  : 0}
+                %
+              </Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                Accuracy
+              </Text>
+            </GlassCard>
+          </View>
+
+          {/* Game Breakdown */}
+          {summary.gameBreakdown.length > 0 && (
+            <GlassCard style={styles.breakdownCard}>
+              <Text style={[styles.breakdownTitle, { color: colors.text }]}>
+                Game Breakdown
+              </Text>
+              {summary.gameBreakdown.map((game, index) => (
+                <View
+                  key={index}
                   style={[
-                    styles.statNumber,
-                    {
-                      color: getScoreColor(
-                        summary.correctAnswers,
-                        summary.totalGames
-                      ),
+                    styles.gameBreakdownItem,
+                    index < summary.gameBreakdown.length - 1 && {
+                      borderBottomColor: colors.border,
+                      borderBottomWidth: 1,
                     },
                   ]}
                 >
-                  {summary.totalGames > 0
-                    ? Math.round(
-                        (summary.correctAnswers / summary.totalGames) * 100
-                      )
-                    : 0}
-                  %
-                </Text>
-                <Text style={styles.statLabel}>Accuracy</Text>
-              </View>
-            </View>
-
-            {/* Game Breakdown */}
-            {summary.gameBreakdown.length > 0 && (
-              <View style={styles.breakdownContainer}>
-                <Text style={styles.breakdownTitle}>📊 Game Breakdown</Text>
-                {summary.gameBreakdown.map((game, index) => (
-                  <View key={index} style={styles.gameBreakdownItem}>
-                    <View style={styles.gameInfo}>
-                      <Text style={styles.gameName}>{game.gameName}</Text>
-                      <Text style={styles.gameStats}>
-                        {game.correct}/{game.played} correct •{" "}
-                        {formatTime(game.averageTime)} avg
-                      </Text>
-                    </View>
-                    <View style={styles.gameScore}>
-                      <Text
-                        style={[
-                          styles.gamePercentage,
-                          { color: getScoreColor(game.correct, game.played) },
-                        ]}
-                      >
-                        {game.played > 0
-                          ? Math.round((game.correct / game.played) * 100)
-                          : 0}
-                        %
-                      </Text>
-                    </View>
+                  <View style={styles.gameInfo}>
+                    <Text style={[styles.gameName, { color: colors.text }]}>
+                      {game.gameName}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.gameStats,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {game.correct}/{game.played} correct •{" "}
+                      {formatTime(game.averageTime)} avg
+                    </Text>
                   </View>
-                ))}
-              </View>
-            )}
+                  <View style={styles.gameScore}>
+                    <Text
+                      style={[styles.gamePercentage, { color: colors.text }]}
+                    >
+                      {game.played > 0
+                        ? Math.round((game.correct / game.played) * 100)
+                        : 0}
+                      %
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </GlassCard>
+          )}
 
-            {/* Motivational Message */}
-            <View style={styles.messageContainer}>
-              <Text style={styles.messageText}>
-                {summary.correctAnswers >= 10
-                  ? "🌟 Outstanding performance! You're a word master!"
-                  : summary.correctAnswers >= 5
-                  ? "🎉 Great job! Keep practicing to improve even more!"
-                  : summary.correctAnswers >= 1
-                  ? "👍 Good effort! Every game makes you stronger!"
-                  : "💪 Don't give up! Practice makes perfect!"}
-              </Text>
-            </View>
-          </ScrollView>
+          {/* Motivational Message */}
+          <GlassCard style={styles.messageCard}>
+            <Text style={[styles.messageText, { color: colors.textSecondary }]}>
+              {getMotivationalMessage(summary.correctAnswers)}
+            </Text>
+          </GlassCard>
+        </ScrollView>
 
-          {/* Action Buttons */}
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={playAgain}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={["#ff6b6b", "#ee5a24"]}
-                style={styles.buttonGradient}
-              >
-                <Text style={styles.primaryButtonText}>🔄 Play Again</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={goHome}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.secondaryButtonText}>🏠 Go Home</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </LinearGradient>
+        {/* Action Buttons */}
+        <View style={styles.actionsContainer}>
+          <MinimalButton
+            title="Play Again"
+            onPress={playAgain}
+            variant="primary"
+            style={styles.primaryButton}
+          />
+          <MinimalButton
+            title="Go Home"
+            onPress={goHome}
+            variant="secondary"
+            style={styles.secondaryButton}
+          />
+        </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -256,171 +278,154 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  gradient: {
-    flex: 1,
-  },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+    paddingTop: 40,
   },
   header: {
     alignItems: "center",
-    marginTop: 40,
-    marginBottom: 20,
+    marginBottom: 32,
   },
   title: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 28,
+    fontFamily: "Inter_600SemiBold",
     textAlign: "center",
     marginBottom: 8,
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 18,
-    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 16,
+    fontFamily: "Inter_400Regular",
     textAlign: "center",
+    letterSpacing: 0.3,
   },
   scrollContainer: {
     flex: 1,
   },
   scoreCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    borderRadius: 25,
-    padding: 30,
-    alignItems: "center",
-    marginBottom: 20,
-    backdropFilter: "blur(10px)",
+    marginBottom: 24,
+    minHeight: 160,
   },
-  scoreEmoji: {
-    fontSize: 48,
-    marginBottom: 10,
+  scoreContent: {
+    alignItems: "center",
+    padding: 32,
   },
   scoreNumber: {
     fontSize: 48,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 5,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 8,
+    letterSpacing: -1,
   },
   scoreLabel: {
-    fontSize: 18,
-    color: "rgba(255, 255, 255, 0.9)",
-    fontWeight: "600",
+    fontSize: 16,
+    fontFamily: "Inter_500Medium",
+    marginBottom: 4,
+    letterSpacing: 0.3,
   },
   totalGames: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.7)",
-    marginTop: 5,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 16,
+    letterSpacing: 0.3,
+  },
+  performanceIndicator: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+  },
+  performanceText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   statsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 24,
+    gap: 12,
   },
-  statItem: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 15,
-    padding: 20,
+  statCard: {
+    flex: 1,
+    minHeight: 100,
     alignItems: "center",
-    flex: 0.3,
+    justifyContent: "center",
+    padding: 20,
   },
   statNumber: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 5,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
   statLabel: {
-    fontSize: 12,
-    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
     textAlign: "center",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
-  breakdownContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
+  breakdownCard: {
+    marginBottom: 24,
+    padding: 24,
   },
   breakdownTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 15,
+    fontSize: 18,
+    fontFamily: "Inter_500Medium",
+    marginBottom: 20,
     textAlign: "center",
+    letterSpacing: 0.3,
   },
   gameBreakdownItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+    paddingVertical: 16,
   },
   gameInfo: {
     flex: 1,
   },
   gameName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "white",
-    marginBottom: 2,
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    marginBottom: 4,
+    letterSpacing: 0.3,
   },
   gameStats: {
     fontSize: 12,
-    color: "rgba(255, 255, 255, 0.7)",
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.3,
   },
   gameScore: {
     alignItems: "flex-end",
   },
   gamePercentage: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: -0.2,
   },
-  messageContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 20,
+  messageCard: {
+    marginBottom: 24,
+    padding: 24,
   },
   messageText: {
-    fontSize: 16,
-    color: "white",
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
     textAlign: "center",
-    lineHeight: 24,
+    lineHeight: 20,
+    letterSpacing: 0.3,
   },
   actionsContainer: {
     paddingBottom: 40,
+    gap: 12,
   },
   primaryButton: {
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 15,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  buttonGradient: {
-    flex: 1,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  primaryButtonText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "white",
+    width: "100%",
   },
   secondaryButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    paddingVertical: 18,
-    borderRadius: 25,
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    fontSize: 18,
-    color: "white",
-    fontWeight: "600",
+    width: "100%",
   },
   loadingContainer: {
     flex: 1,
@@ -428,8 +433,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    fontSize: 20,
-    color: "white",
-    fontWeight: "600",
+    fontSize: 16,
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.3,
   },
 });

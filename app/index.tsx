@@ -1,5 +1,8 @@
+import { GlassCard } from "@/components/ui/GlassCard";
+import { MinimalButton } from "@/components/ui/MinimalButton";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { databaseService, UserStats } from "@/services/database";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -8,7 +11,6 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -17,22 +19,23 @@ const { width, height } = Dimensions.get("window");
 export default function HomeScreen() {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
-  const [scaleAnim] = useState(new Animated.Value(0.9));
+  const [slideAnim] = useState(new Animated.Value(30));
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? "light"];
 
   useEffect(() => {
     loadUserStats();
 
-    // Animate entrance
+    // Animate entrance with subtle fade and slide
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 600,
         useNativeDriver: true,
       }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
         useNativeDriver: true,
       }),
     ]).start();
@@ -60,90 +63,106 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.gradient}>
-        <Animated.View
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
-            },
-          ]}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>🧩 Wordingo</Text>
-            <Text style={styles.subtitle}>Challenge Your Mind</Text>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <Animated.View
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.text }]}>Wordingo</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Challenge Your Mind
+          </Text>
+        </View>
+
+        {/* Stats Section */}
+        <View style={styles.statsSection}>
+          <View style={styles.statsGrid}>
+            <GlassCard style={styles.statCard}>
+              <View style={styles.statContent}>
+                <Text style={[styles.statNumber, { color: colors.text }]}>
+                  {userStats?.daily_streak || 0}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Daily Streak
+                </Text>
+                <View
+                  style={[styles.statIcon, { backgroundColor: colors.text }]}
+                />
+              </View>
+            </GlassCard>
+
+            <GlassCard style={styles.statCard}>
+              <View style={styles.statContent}>
+                <Text style={[styles.statNumber, { color: colors.text }]}>
+                  {userStats?.longest_streak || 0}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Best Score
+                </Text>
+                <View
+                  style={[
+                    styles.statIcon,
+                    styles.statIconSquare,
+                    { backgroundColor: colors.text },
+                  ]}
+                />
+              </View>
+            </GlassCard>
           </View>
+        </View>
 
-          {/* Stats Cards */}
-          <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>
-                {userStats?.daily_streak || 0}
-              </Text>
-              <Text style={styles.statLabel}>Daily Streak</Text>
-              <Text style={styles.statEmoji}>🔥</Text>
-            </View>
+        {/* Main Action */}
+        <View style={styles.mainAction}>
+          <MinimalButton
+            title="Start Game"
+            onPress={startGame}
+            variant="primary"
+            style={styles.primaryButton}
+          />
+        </View>
 
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>
-                {userStats?.longest_streak || 0}
-              </Text>
-              <Text style={styles.statLabel}>Best Score</Text>
-              <Text style={styles.statEmoji}>🏆</Text>
-            </View>
-          </View>
+        {/* Secondary Actions */}
+        <View style={styles.secondaryActions}>
+          <MinimalButton
+            title="View Stats"
+            onPress={viewStats}
+            variant="secondary"
+            style={styles.secondaryButton}
+          />
+          <MinimalButton
+            title="How to Play"
+            onPress={howToPlay}
+            variant="secondary"
+            style={styles.secondaryButton}
+          />
+        </View>
 
-          {/* Main Actions */}
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={startGame}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={["#ff6b6b", "#ee5a24"]}
-                style={styles.buttonGradient}
-              >
-                <Text style={styles.primaryButtonText}>🚀 Start Gauntlet</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <View style={styles.secondaryActions}>
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={viewStats}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.secondaryButtonText}>📊 View Stats</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={howToPlay}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.secondaryButtonText}>❓ How to Play</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Footer Info */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Total Games: {userStats?.total_games || 0}
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: colors.textTertiary }]}>
+            Total Games: {userStats?.total_games || 0}
+          </Text>
+          {userStats?.last_played && (
+            <Text style={[styles.footerText, { color: colors.textTertiary }]}>
+              Last Played:{" "}
+              {new Date(userStats.last_played).toLocaleDateString()}
             </Text>
-            {userStats?.last_played && (
-              <Text style={styles.footerText}>
-                Last Played:{" "}
-                {new Date(userStats.last_played).toLocaleDateString()}
-              </Text>
-            )}
-          </View>
-        </Animated.View>
-      </LinearGradient>
+          )}
+        </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -152,111 +171,89 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  gradient: {
-    flex: 1,
-  },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    justifyContent: "space-between",
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   header: {
     alignItems: "center",
-    marginTop: 60,
+    marginBottom: 60,
   },
   title: {
-    fontSize: 42,
-    fontWeight: "bold",
-    color: "white",
-    textAlign: "center",
+    fontSize: 36,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: -0.5,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 18,
-    color: "rgba(255, 255, 255, 0.8)",
-    textAlign: "center",
+    fontSize: 16,
+    fontFamily: "Inter_300Light",
+    letterSpacing: 0.3,
   },
-  statsContainer: {
+  statsSection: {
+    marginBottom: 60,
+  },
+  statsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginVertical: 40,
+    gap: 16,
   },
   statCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    borderRadius: 20,
-    padding: 20,
+    flex: 1,
+    minHeight: 120,
+  },
+  statContent: {
+    flex: 1,
     alignItems: "center",
-    flex: 0.45,
-    backdropFilter: "blur(10px)",
+    justifyContent: "center",
+    padding: 20,
   },
   statNumber: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 5,
+    fontSize: 28,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 8,
   },
   statLabel: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
     textAlign: "center",
+    letterSpacing: 0.5,
+    marginBottom: 12,
   },
-  statEmoji: {
-    fontSize: 24,
-    marginTop: 8,
+  statIcon: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  actionsContainer: {
-    flex: 1,
-    justifyContent: "center",
+  statIconSquare: {
+    borderRadius: 1,
+  },
+  mainAction: {
     alignItems: "center",
+    marginBottom: 32,
   },
   primaryButton: {
-    width: width * 0.8,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 30,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  buttonGradient: {
-    flex: 1,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  primaryButtonText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "white",
+    width: "100%",
   },
   secondaryActions: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: width * 0.8,
+    gap: 16,
+    marginBottom: 60,
   },
   secondaryButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 25,
-    flex: 0.45,
-    alignItems: "center",
-    backdropFilter: "blur(10px)",
-  },
-  secondaryButtonText: {
-    fontSize: 16,
-    color: "white",
-    fontWeight: "600",
+    flex: 1,
   },
   footer: {
     alignItems: "center",
-    marginBottom: 40,
+    marginTop: "auto",
   },
   footerText: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 12,
+    fontFamily: "Inter_300Light",
+    letterSpacing: 0.3,
     marginVertical: 2,
   },
 });

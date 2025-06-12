@@ -1,5 +1,8 @@
+import { GlassCard } from "@/components/ui/GlassCard";
+import { MinimalButton } from "@/components/ui/MinimalButton";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { databaseService, UserStats } from "@/services/database";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -19,6 +22,8 @@ export default function StatsScreen() {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(30));
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? "light"];
 
   useEffect(() => {
     loadUserStats();
@@ -27,7 +32,7 @@ export default function StatsScreen() {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 600,
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
@@ -51,26 +56,30 @@ export default function StatsScreen() {
     router.back();
   };
 
-  const getStreakEmoji = (streak: number) => {
-    if (streak >= 30) return "🔥";
-    if (streak >= 14) return "⚡";
-    if (streak >= 7) return "🌟";
-    if (streak >= 3) return "✨";
-    return "💫";
+  const getPerformanceLevel = (totalGames: number, longestStreak: number) => {
+    if (longestStreak >= 20 && totalGames >= 100) return "Master";
+    if (longestStreak >= 15 && totalGames >= 75) return "Expert";
+    if (longestStreak >= 10 && totalGames >= 50) return "Advanced";
+    if (longestStreak >= 5 && totalGames >= 25) return "Intermediate";
+    if (totalGames >= 10) return "Beginner";
+    return "Newcomer";
   };
 
-  const getPerformanceLevel = (totalGames: number, longestStreak: number) => {
-    if (longestStreak >= 20 && totalGames >= 100)
-      return { level: "Master", emoji: "🏆", color: "#FFD700" };
-    if (longestStreak >= 15 && totalGames >= 75)
-      return { level: "Expert", emoji: "🥇", color: "#FF6B35" };
-    if (longestStreak >= 10 && totalGames >= 50)
-      return { level: "Advanced", emoji: "🥈", color: "#4ECDC4" };
-    if (longestStreak >= 5 && totalGames >= 25)
-      return { level: "Intermediate", emoji: "🥉", color: "#45B7D1" };
-    if (totalGames >= 10)
-      return { level: "Beginner", emoji: "🌱", color: "#96CEB4" };
-    return { level: "Newcomer", emoji: "🐣", color: "#FFEAA7" };
+  const getPerformanceMessage = (level: string) => {
+    switch (level) {
+      case "Master":
+        return "You are a true word master!";
+      case "Expert":
+        return "Exceptional word skills!";
+      case "Advanced":
+        return "Great progress, keep it up!";
+      case "Intermediate":
+        return "You're getting better!";
+      case "Beginner":
+        return "Nice start, keep playing!";
+      default:
+        return "Welcome to Wordingo!";
+    }
   };
 
   const formatLastPlayed = (dateString: string) => {
@@ -86,232 +95,154 @@ export default function StatsScreen() {
     return date.toLocaleDateString();
   };
 
+  const getStreakMessage = (streak: number) => {
+    if (streak === 0) return "Start your streak today!";
+    if (streak === 1) return "Great start! Keep it going!";
+    if (streak < 7) return "Building momentum!";
+    if (streak < 30) return "You're on fire!";
+    return "Incredible dedication!";
+  };
+
   if (!userStats) {
     return (
-      <SafeAreaView style={styles.container}>
-        <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.gradient}>
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading stats...</Text>
-          </View>
-        </LinearGradient>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: colors.text }]}>
+            Loading stats...
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
 
-  const performance = getPerformanceLevel(
+  const performanceLevel = getPerformanceLevel(
     userStats.total_games,
     userStats.longest_streak
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.gradient}>
-        <Animated.View
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <Animated.View
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={goBack} style={styles.backButton}>
+            <Text style={[styles.backButtonText, { color: colors.text }]}>
+              ← Back
+            </Text>
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text }]}>Your Stats</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <ScrollView
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={goBack} style={styles.backButton}>
-              <Text style={styles.backButtonText}>← Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>📊 Your Stats</Text>
-            <View style={styles.placeholder} />
+          {/* Performance Level Card */}
+          <GlassCard style={styles.levelCard}>
+            <Text style={[styles.levelText, { color: colors.text }]}>
+              {performanceLevel}
+            </Text>
+            <Text
+              style={[styles.levelDescription, { color: colors.textSecondary }]}
+            >
+              {getPerformanceMessage(performanceLevel)}
+            </Text>
+          </GlassCard>
+
+          {/* Main Stats Grid */}
+          <View style={styles.statsGrid}>
+            <GlassCard style={styles.statCard}>
+              <Text style={[styles.statNumber, { color: colors.text }]}>
+                {userStats.total_games}
+              </Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                Total Games
+              </Text>
+            </GlassCard>
+
+            <GlassCard style={styles.statCard}>
+              <Text style={[styles.statNumber, { color: colors.text }]}>
+                {userStats.longest_streak}
+              </Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                Best Streak
+              </Text>
+            </GlassCard>
           </View>
 
-          <ScrollView
-            style={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Performance Level Card */}
-            <View style={styles.levelCard}>
-              <Text style={styles.levelEmoji}>{performance.emoji}</Text>
-              <Text style={[styles.levelText, { color: performance.color }]}>
-                {performance.level}
+          {/* Daily Streak Section */}
+          <GlassCard style={styles.streakCard}>
+            <Text style={[styles.streakTitle, { color: colors.text }]}>
+              Daily Streak
+            </Text>
+            <View style={styles.streakDisplay}>
+              <Text style={[styles.streakNumber, { color: colors.text }]}>
+                {userStats.daily_streak}
               </Text>
-              <Text style={styles.levelDescription}>
-                {performance.level === "Master"
-                  ? "You are a true word master!"
-                  : performance.level === "Expert"
-                  ? "Exceptional word skills!"
-                  : performance.level === "Advanced"
-                  ? "Great progress, keep it up!"
-                  : performance.level === "Intermediate"
-                  ? "You're getting better!"
-                  : performance.level === "Beginner"
-                  ? "Nice start, keep playing!"
-                  : "Welcome to Wordingo!"}
+              <Text
+                style={[styles.streakDays, { color: colors.textSecondary }]}
+              >
+                days
               </Text>
             </View>
+            <Text
+              style={[styles.streakMessage, { color: colors.textSecondary }]}
+            >
+              {getStreakMessage(userStats.daily_streak)}
+            </Text>
+          </GlassCard>
 
-            {/* Main Stats Grid */}
-            <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <Text style={styles.statEmoji}>🎯</Text>
-                <Text style={styles.statNumber}>{userStats.total_games}</Text>
-                <Text style={styles.statLabel}>Total Games</Text>
-              </View>
-
-              <View style={styles.statCard}>
-                <Text style={styles.statEmoji}>🏆</Text>
-                <Text style={styles.statNumber}>
-                  {userStats.longest_streak}
-                </Text>
-                <Text style={styles.statLabel}>Best Streak</Text>
-              </View>
-            </View>
-
-            {/* Daily Streak Section */}
-            <View style={styles.streakSection}>
-              <View style={styles.streakHeader}>
-                <Text style={styles.streakTitle}>Daily Streak</Text>
-                <Text style={styles.streakEmoji}>
-                  {getStreakEmoji(userStats.daily_streak)}
-                </Text>
-              </View>
-
-              <View style={styles.streakDisplay}>
-                <Text style={styles.streakNumber}>
-                  {userStats.daily_streak}
-                </Text>
-                <Text style={styles.streakDays}>days</Text>
-              </View>
-
-              <Text style={styles.streakMessage}>
-                {userStats.daily_streak === 0
-                  ? "Start your streak today!"
-                  : userStats.daily_streak === 1
-                  ? "Great start! Keep it going!"
-                  : userStats.daily_streak < 7
-                  ? "Building momentum!"
-                  : userStats.daily_streak < 30
-                  ? "You're on fire!"
-                  : "Incredible dedication!"}
+          {/* Activity Summary */}
+          <GlassCard style={styles.activityCard}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Activity
+            </Text>
+            <View style={styles.activityRow}>
+              <Text
+                style={[styles.activityLabel, { color: colors.textSecondary }]}
+              >
+                Last Played
+              </Text>
+              <Text style={[styles.activityValue, { color: colors.text }]}>
+                {formatLastPlayed(userStats.last_played)}
               </Text>
             </View>
-
-            {/* Activity Summary */}
-            <View style={styles.activitySection}>
-              <Text style={styles.sectionTitle}>📅 Activity</Text>
-
-              <View style={styles.activityItem}>
-                <View style={styles.activityIcon}>
-                  <Text style={styles.activityEmoji}>🕒</Text>
-                </View>
-                <View style={styles.activityInfo}>
-                  <Text style={styles.activityLabel}>Last Played</Text>
-                  <Text style={styles.activityValue}>
-                    {formatLastPlayed(userStats.last_played)}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.activityItem}>
-                <View style={styles.activityIcon}>
-                  <Text style={styles.activityEmoji}>📈</Text>
-                </View>
-                <View style={styles.activityInfo}>
-                  <Text style={styles.activityLabel}>Average per Session</Text>
-                  <Text style={styles.activityValue}>
-                    {userStats.total_games > 0
-                      ? Math.round(
-                          userStats.total_games /
-                            Math.max(1, userStats.longest_streak)
-                        )
-                      : 0}{" "}
-                    games
-                  </Text>
-                </View>
-              </View>
+            <View style={styles.activityRow}>
+              <Text
+                style={[styles.activityLabel, { color: colors.textSecondary }]}
+              >
+                Games This Week
+              </Text>
+              <Text style={[styles.activityValue, { color: colors.text }]}>
+                {userStats.games_this_week || 0}
+              </Text>
             </View>
+          </GlassCard>
+        </ScrollView>
 
-            {/* Achievements Section */}
-            <View style={styles.achievementsSection}>
-              <Text style={styles.sectionTitle}>🏅 Achievements</Text>
-
-              <View style={styles.achievementsList}>
-                <View
-                  style={[
-                    styles.achievementItem,
-                    userStats.total_games >= 10 && styles.achievementUnlocked,
-                  ]}
-                >
-                  <Text style={styles.achievementEmoji}>🎮</Text>
-                  <View style={styles.achievementInfo}>
-                    <Text style={styles.achievementName}>First Steps</Text>
-                    <Text style={styles.achievementDesc}>Play 10 games</Text>
-                  </View>
-                  <Text style={styles.achievementStatus}>
-                    {userStats.total_games >= 10
-                      ? "✅"
-                      : `${userStats.total_games}/10`}
-                  </Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.achievementItem,
-                    userStats.longest_streak >= 5 && styles.achievementUnlocked,
-                  ]}
-                >
-                  <Text style={styles.achievementEmoji}>🔥</Text>
-                  <View style={styles.achievementInfo}>
-                    <Text style={styles.achievementName}>Hot Streak</Text>
-                    <Text style={styles.achievementDesc}>Reach 5 streak</Text>
-                  </View>
-                  <Text style={styles.achievementStatus}>
-                    {userStats.longest_streak >= 5
-                      ? "✅"
-                      : `${userStats.longest_streak}/5`}
-                  </Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.achievementItem,
-                    userStats.daily_streak >= 7 && styles.achievementUnlocked,
-                  ]}
-                >
-                  <Text style={styles.achievementEmoji}>📅</Text>
-                  <View style={styles.achievementInfo}>
-                    <Text style={styles.achievementName}>Week Warrior</Text>
-                    <Text style={styles.achievementDesc}>7 day streak</Text>
-                  </View>
-                  <Text style={styles.achievementStatus}>
-                    {userStats.daily_streak >= 7
-                      ? "✅"
-                      : `${userStats.daily_streak}/7`}
-                  </Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.achievementItem,
-                    userStats.longest_streak >= 15 &&
-                      styles.achievementUnlocked,
-                  ]}
-                >
-                  <Text style={styles.achievementEmoji}>🏆</Text>
-                  <View style={styles.achievementInfo}>
-                    <Text style={styles.achievementName}>Champion</Text>
-                    <Text style={styles.achievementDesc}>Reach 15 streak</Text>
-                  </View>
-                  <Text style={styles.achievementStatus}>
-                    {userStats.longest_streak >= 15
-                      ? "✅"
-                      : `${userStats.longest_streak}/15`}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </ScrollView>
-        </Animated.View>
-      </LinearGradient>
+        {/* Back Button */}
+        <View style={styles.actionContainer}>
+          <MinimalButton
+            title="Back to Home"
+            onPress={goBack}
+            variant="secondary"
+            style={styles.backHomeButton}
+          />
+        </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -320,212 +251,142 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  gradient: {
-    flex: 1,
-  },
   content: {
     flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 20,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
+    marginBottom: 32,
   },
   backButton: {
-    padding: 10,
+    padding: 8,
   },
   backButtonText: {
     fontSize: 16,
-    color: "white",
-    fontWeight: "600",
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.3,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 20,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: -0.3,
   },
   placeholder: {
     width: 60,
   },
   scrollContainer: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   levelCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    borderRadius: 25,
-    padding: 30,
+    marginBottom: 24,
+    padding: 24,
     alignItems: "center",
-    marginBottom: 20,
-    backdropFilter: "blur(10px)",
-  },
-  levelEmoji: {
-    fontSize: 48,
-    marginBottom: 10,
   },
   levelText: {
-    fontSize: 28,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontFamily: "Inter_600SemiBold",
     marginBottom: 8,
+    letterSpacing: -0.3,
   },
   levelDescription: {
-    fontSize: 16,
-    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
     textAlign: "center",
+    letterSpacing: 0.3,
   },
   statsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 24,
+    gap: 16,
   },
   statCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-    padding: 25,
+    flex: 1,
+    padding: 24,
     alignItems: "center",
-    flex: 0.48,
-  },
-  statEmoji: {
-    fontSize: 32,
-    marginBottom: 10,
+    minHeight: 100,
   },
   statNumber: {
     fontSize: 32,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 5,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   statLabel: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
     textAlign: "center",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
-  streakSection: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-    padding: 25,
-    marginBottom: 20,
+  streakCard: {
+    marginBottom: 24,
+    padding: 24,
     alignItems: "center",
-  },
-  streakHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
   },
   streakTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "white",
-    marginRight: 10,
-  },
-  streakEmoji: {
-    fontSize: 24,
+    fontSize: 18,
+    fontFamily: "Inter_500Medium",
+    marginBottom: 16,
+    letterSpacing: 0.3,
   },
   streakDisplay: {
     flexDirection: "row",
     alignItems: "baseline",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   streakNumber: {
-    fontSize: 48,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 40,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: -0.8,
   },
   streakDays: {
-    fontSize: 18,
-    color: "rgba(255, 255, 255, 0.8)",
-    marginLeft: 5,
+    fontSize: 16,
+    fontFamily: "Inter_400Regular",
+    marginLeft: 8,
+    letterSpacing: 0.3,
   },
   streakMessage: {
-    fontSize: 16,
-    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
     textAlign: "center",
+    letterSpacing: 0.3,
   },
-  activitySection: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
+  activityCard: {
+    marginBottom: 24,
+    padding: 24,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 15,
+    fontSize: 18,
+    fontFamily: "Inter_500Medium",
+    marginBottom: 16,
+    letterSpacing: 0.3,
   },
-  activityItem: {
+  activityRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-  },
-  activityIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  activityEmoji: {
-    fontSize: 20,
-  },
-  activityInfo: {
-    flex: 1,
+    marginBottom: 12,
   },
   activityLabel: {
-    fontSize: 16,
-    color: "white",
-    fontWeight: "600",
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.3,
   },
   activityValue: {
     fontSize: 14,
-    color: "rgba(255, 255, 255, 0.7)",
-    marginTop: 2,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.3,
   },
-  achievementsSection: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 40,
+  actionContainer: {
+    paddingBottom: 40,
   },
-  achievementsList: {
-    gap: 12,
-  },
-  achievementItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 15,
-    borderRadius: 15,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-  },
-  achievementUnlocked: {
-    backgroundColor: "rgba(76, 175, 80, 0.2)",
-  },
-  achievementEmoji: {
-    fontSize: 24,
-    marginRight: 15,
-  },
-  achievementInfo: {
-    flex: 1,
-  },
-  achievementName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "white",
-  },
-  achievementDesc: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.7)",
-    marginTop: 2,
-  },
-  achievementStatus: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.8)",
-    fontWeight: "600",
+  backHomeButton: {
+    width: "100%",
   },
   loadingContainer: {
     flex: 1,
@@ -533,8 +394,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    fontSize: 20,
-    color: "white",
-    fontWeight: "600",
+    fontSize: 16,
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.3,
   },
 });

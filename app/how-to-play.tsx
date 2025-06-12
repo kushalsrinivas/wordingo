@@ -1,4 +1,7 @@
-import { LinearGradient } from "expo-linear-gradient";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { MinimalButton } from "@/components/ui/MinimalButton";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -16,7 +19,6 @@ const { width } = Dimensions.get("window");
 
 interface GameType {
   title: string;
-  emoji: string;
   description: string;
   example: string;
   tips: string[];
@@ -25,7 +27,6 @@ interface GameType {
 const gameTypes: GameType[] = [
   {
     title: "Anagram Solver",
-    emoji: "🔤",
     description: "Rearrange the given letters to form a valid word.",
     example: "LISTEN → SILENT",
     tips: [
@@ -36,7 +37,6 @@ const gameTypes: GameType[] = [
   },
   {
     title: "Word Association",
-    emoji: "🔗",
     description: "Find the word that has the opposite or related meaning.",
     example: "Hot → Cold (opposite)",
     tips: [
@@ -47,7 +47,6 @@ const gameTypes: GameType[] = [
   },
   {
     title: "Fill in the Blanks",
-    emoji: "📝",
     description: "Complete the sentence by filling in the missing word.",
     example: "The cat sat on the ___ → mat",
     tips: [
@@ -57,30 +56,7 @@ const gameTypes: GameType[] = [
     ],
   },
   {
-    title: "Odd One Out",
-    emoji: "🎯",
-    description: "Identify which word doesn't belong with the others.",
-    example: "Apple, Orange, Car, Banana → Car",
-    tips: [
-      "Look for categories or themes",
-      "Find what most words have in common",
-      "The odd one will be different",
-    ],
-  },
-  {
-    title: "Synonym Match",
-    emoji: "📚",
-    description: "Find the word that has the same or similar meaning.",
-    example: "Happy → Joyful",
-    tips: [
-      "Think of words with similar meanings",
-      "Consider different ways to express the same idea",
-      "Eliminate antonyms first",
-    ],
-  },
-  {
-    title: "Spelling Bee",
-    emoji: "🐝",
+    title: "Spelling Challenge",
     description: "Spell the word correctly based on its definition.",
     example: "A large African animal with a trunk → elephant",
     tips: [
@@ -94,13 +70,15 @@ const gameTypes: GameType[] = [
 export default function HowToPlayScreen() {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(30));
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? "light"];
 
   useEffect(() => {
     // Animate entrance
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 600,
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
@@ -116,186 +94,185 @@ export default function HowToPlayScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.gradient}>
-        <Animated.View
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <Animated.View
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={goBack} style={styles.backButton}>
+            <Text style={[styles.backButtonText, { color: colors.text }]}>
+              ← Back
+            </Text>
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text }]}>
+            How to Play
+          </Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <ScrollView
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={goBack} style={styles.backButton}>
-              <Text style={styles.backButtonText}>← Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>❓ How to Play</Text>
-            <View style={styles.placeholder} />
-          </View>
+          {/* Game Overview */}
+          <GlassCard style={styles.overviewCard}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Game Overview
+            </Text>
+            <Text
+              style={[styles.overviewText, { color: colors.textSecondary }]}
+            >
+              Wordingo is a challenging word game where you face different types
+              of word puzzles in random order. You must answer correctly to
+              continue - one wrong answer ends your streak!
+            </Text>
 
-          <ScrollView
-            style={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Game Overview */}
-            <View style={styles.overviewSection}>
-              <Text style={styles.sectionTitle}>🎮 Game Overview</Text>
-              <View style={styles.overviewCard}>
-                <Text style={styles.overviewText}>
-                  Wordingo is a challenging word game where you face different
-                  types of word puzzles in random order. You must answer
-                  correctly to continue - one wrong answer ends your streak!
+            <View style={styles.rulesList}>
+              <View style={styles.ruleItem}>
+                <View
+                  style={[styles.ruleDot, { backgroundColor: colors.text }]}
+                />
+                <Text
+                  style={[styles.ruleText, { color: colors.textSecondary }]}
+                >
+                  Answer all questions correctly to build your streak
                 </Text>
-
-                <View style={styles.rulesList}>
-                  <View style={styles.ruleItem}>
-                    <Text style={styles.ruleEmoji}>🎯</Text>
-                    <Text style={styles.ruleText}>
-                      Answer all questions correctly to build your streak
-                    </Text>
-                  </View>
-
-                  <View style={styles.ruleItem}>
-                    <Text style={styles.ruleEmoji}>🔄</Text>
-                    <Text style={styles.ruleText}>
-                      Games are presented in random order
-                    </Text>
-                  </View>
-
-                  <View style={styles.ruleItem}>
-                    <Text style={styles.ruleEmoji}>📈</Text>
-                    <Text style={styles.ruleText}>
-                      Difficulty increases with each round
-                    </Text>
-                  </View>
-
-                  <View style={styles.ruleItem}>
-                    <Text style={styles.ruleEmoji}>❌</Text>
-                    <Text style={styles.ruleText}>
-                      One wrong answer resets your streak to 0
-                    </Text>
-                  </View>
-
-                  <View style={styles.ruleItem}>
-                    <Text style={styles.ruleEmoji}>🔥</Text>
-                    <Text style={styles.ruleText}>
-                      Play daily to maintain your streak
-                    </Text>
-                  </View>
-                </View>
               </View>
-            </View>
 
-            {/* Game Types */}
-            <View style={styles.gameTypesSection}>
-              <Text style={styles.sectionTitle}>🎲 Game Types</Text>
-
-              {gameTypes.map((gameType, index) => (
-                <View key={index} style={styles.gameTypeCard}>
-                  <View style={styles.gameTypeHeader}>
-                    <Text style={styles.gameTypeEmoji}>{gameType.emoji}</Text>
-                    <Text style={styles.gameTypeTitle}>{gameType.title}</Text>
-                  </View>
-
-                  <Text style={styles.gameTypeDescription}>
-                    {gameType.description}
-                  </Text>
-
-                  <View style={styles.exampleContainer}>
-                    <Text style={styles.exampleLabel}>Example:</Text>
-                    <Text style={styles.exampleText}>{gameType.example}</Text>
-                  </View>
-
-                  <View style={styles.tipsContainer}>
-                    <Text style={styles.tipsLabel}>💡 Tips:</Text>
-                    {gameType.tips.map((tip, tipIndex) => (
-                      <Text key={tipIndex} style={styles.tipText}>
-                        • {tip}
-                      </Text>
-                    ))}
-                  </View>
-                </View>
-              ))}
-            </View>
-
-            {/* Scoring System */}
-            <View style={styles.scoringSection}>
-              <Text style={styles.sectionTitle}>🏆 Scoring & Progression</Text>
-              <View style={styles.scoringCard}>
-                <View style={styles.scoringItem}>
-                  <Text style={styles.scoringEmoji}>⭐</Text>
-                  <View style={styles.scoringInfo}>
-                    <Text style={styles.scoringTitle}>Streak Score</Text>
-                    <Text style={styles.scoringDesc}>
-                      Your score equals your current streak
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.scoringItem}>
-                  <Text style={styles.scoringEmoji}>🔄</Text>
-                  <View style={styles.scoringInfo}>
-                    <Text style={styles.scoringTitle}>Rounds</Text>
-                    <Text style={styles.scoringDesc}>
-                      Complete all 6 game types to finish a round
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.scoringItem}>
-                  <Text style={styles.scoringEmoji}>📊</Text>
-                  <View style={styles.scoringInfo}>
-                    <Text style={styles.scoringTitle}>Difficulty</Text>
-                    <Text style={styles.scoringDesc}>
-                      Questions get harder with each new round
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.scoringItem}>
-                  <Text style={styles.scoringEmoji}>🎯</Text>
-                  <View style={styles.scoringInfo}>
-                    <Text style={styles.scoringTitle}>Best Streak</Text>
-                    <Text style={styles.scoringDesc}>
-                      Your highest score is saved as your record
-                    </Text>
-                  </View>
-                </View>
+              <View style={styles.ruleItem}>
+                <View
+                  style={[styles.ruleDot, { backgroundColor: colors.text }]}
+                />
+                <Text
+                  style={[styles.ruleText, { color: colors.textSecondary }]}
+                >
+                  Games are presented in random order
+                </Text>
               </View>
-            </View>
 
-            {/* Tips Section */}
-            <View style={styles.tipsSection}>
-              <Text style={styles.sectionTitle}>💡 General Tips</Text>
-              <View style={styles.generalTipsCard}>
-                <Text style={styles.generalTip}>
-                  🧠 <Text style={styles.tipBold}>Stay Calm:</Text> Take your
-                  time to think through each answer
+              <View style={styles.ruleItem}>
+                <View
+                  style={[styles.ruleDot, { backgroundColor: colors.text }]}
+                />
+                <Text
+                  style={[styles.ruleText, { color: colors.textSecondary }]}
+                >
+                  Difficulty increases with each round
                 </Text>
-                <Text style={styles.generalTip}>
-                  🎯 <Text style={styles.tipBold}>Read Carefully:</Text> Make
-                  sure you understand what&apos;s being asked
+              </View>
+
+              <View style={styles.ruleItem}>
+                <View
+                  style={[styles.ruleDot, { backgroundColor: colors.text }]}
+                />
+                <Text
+                  style={[styles.ruleText, { color: colors.textSecondary }]}
+                >
+                  One wrong answer resets your streak to 0
                 </Text>
-                <Text style={styles.generalTip}>
-                  🔄 <Text style={styles.tipBold}>Practice Daily:</Text> Regular
-                  play improves your word skills
-                </Text>
-                <Text style={styles.generalTip}>
-                  📚 <Text style={styles.tipBold}>Learn from Mistakes:</Text>{" "}
-                  Wrong answers are learning opportunities
-                </Text>
-                <Text style={styles.generalTip}>
-                  🎮 <Text style={styles.tipBold}>Have Fun:</Text> Enjoy the
-                  challenge and celebrate your progress!
+              </View>
+
+              <View style={styles.ruleItem}>
+                <View
+                  style={[styles.ruleDot, { backgroundColor: colors.text }]}
+                />
+                <Text
+                  style={[styles.ruleText, { color: colors.textSecondary }]}
+                >
+                  Play daily to maintain your streak
                 </Text>
               </View>
             </View>
-          </ScrollView>
-        </Animated.View>
-      </LinearGradient>
+          </GlassCard>
+
+          {/* Game Types */}
+          <Text style={[styles.gameTypesTitle, { color: colors.text }]}>
+            Game Types
+          </Text>
+
+          {gameTypes.map((gameType, index) => (
+            <GlassCard key={index} style={styles.gameTypeCard}>
+              <Text style={[styles.gameTypeTitle, { color: colors.text }]}>
+                {gameType.title}
+              </Text>
+              <Text
+                style={[
+                  styles.gameTypeDescription,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {gameType.description}
+              </Text>
+
+              <View style={styles.exampleSection}>
+                <Text
+                  style={[styles.exampleLabel, { color: colors.textTertiary }]}
+                >
+                  Example:
+                </Text>
+                <Text style={[styles.exampleText, { color: colors.text }]}>
+                  {gameType.example}
+                </Text>
+              </View>
+
+              <View style={styles.tipsSection}>
+                <Text
+                  style={[styles.tipsLabel, { color: colors.textTertiary }]}
+                >
+                  Tips:
+                </Text>
+                {gameType.tips.map((tip, tipIndex) => (
+                  <View key={tipIndex} style={styles.tipItem}>
+                    <View
+                      style={[
+                        styles.tipDot,
+                        { backgroundColor: colors.textTertiary },
+                      ]}
+                    />
+                    <Text
+                      style={[styles.tipText, { color: colors.textSecondary }]}
+                    >
+                      {tip}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </GlassCard>
+          ))}
+
+          {/* Scoring Section */}
+          <GlassCard style={styles.scoringCard}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Scoring & Streaks
+            </Text>
+            <Text style={[styles.scoringText, { color: colors.textSecondary }]}>
+              Your goal is to build the longest streak possible. Each correct
+              answer extends your streak, while a wrong answer resets it to
+              zero. Daily streaks are maintained by playing at least once per
+              day.
+            </Text>
+          </GlassCard>
+        </ScrollView>
+
+        {/* Back Button */}
+        <View style={styles.actionContainer}>
+          <MinimalButton
+            title="Start Playing"
+            onPress={() => router.replace("/game")}
+            variant="primary"
+            style={styles.startButton}
+          />
+        </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -304,183 +281,154 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  gradient: {
-    flex: 1,
-  },
   content: {
     flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 20,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
+    marginBottom: 32,
   },
   backButton: {
-    padding: 10,
+    padding: 8,
   },
   backButtonText: {
     fontSize: 16,
-    color: "white",
-    fontWeight: "600",
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.3,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 20,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: -0.3,
   },
   placeholder: {
     width: 60,
   },
   scrollContainer: {
     flex: 1,
-    paddingHorizontal: 20,
-  },
-  overviewSection: {
-    marginBottom: 25,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 15,
   },
   overviewCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-    padding: 20,
+    marginBottom: 32,
+    padding: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 16,
+    letterSpacing: -0.2,
   },
   overviewText: {
-    fontSize: 16,
-    color: "white",
-    lineHeight: 24,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 20,
     marginBottom: 20,
+    letterSpacing: 0.3,
   },
   rulesList: {
     gap: 12,
   },
   ruleItem: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
   },
-  ruleEmoji: {
-    fontSize: 20,
+  ruleDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 8,
     marginRight: 12,
   },
   ruleText: {
-    fontSize: 15,
-    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
     flex: 1,
+    lineHeight: 20,
+    letterSpacing: 0.3,
   },
-  gameTypesSection: {
-    marginBottom: 25,
+  gameTypesTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 20,
+    letterSpacing: -0.2,
   },
   gameTypeCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 15,
+    marginBottom: 20,
     padding: 20,
-    marginBottom: 15,
-  },
-  gameTypeHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  gameTypeEmoji: {
-    fontSize: 24,
-    marginRight: 12,
   },
   gameTypeTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 8,
+    letterSpacing: -0.2,
   },
   gameTypeDescription: {
-    fontSize: 15,
-    color: "rgba(255, 255, 255, 0.9)",
-    marginBottom: 12,
-    lineHeight: 22,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 20,
+    marginBottom: 16,
+    letterSpacing: 0.3,
   },
-  exampleContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
+  exampleSection: {
+    marginBottom: 16,
   },
   exampleLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
     marginBottom: 4,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   exampleText: {
-    fontSize: 15,
-    color: "white",
-    fontWeight: "500",
-  },
-  tipsContainer: {
-    marginTop: 8,
-  },
-  tipsLabel: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.8)",
-    marginBottom: 8,
-  },
-  tipText: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.8)",
-    marginBottom: 4,
-    paddingLeft: 8,
-  },
-  scoringSection: {
-    marginBottom: 25,
-  },
-  scoringCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-    padding: 20,
-    gap: 16,
-  },
-  scoringItem: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  scoringEmoji: {
-    fontSize: 24,
-    marginRight: 15,
-  },
-  scoringInfo: {
-    flex: 1,
-  },
-  scoringTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 2,
-  },
-  scoringDesc: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.8)",
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.3,
   },
   tipsSection: {
-    marginBottom: 40,
+    gap: 8,
   },
-  generalTipsCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-    padding: 20,
-    gap: 16,
+  tipsLabel: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    marginBottom: 8,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
-  generalTip: {
-    fontSize: 15,
-    color: "rgba(255, 255, 255, 0.9)",
-    lineHeight: 22,
+  tipItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
-  tipBold: {
-    fontWeight: "bold",
-    color: "white",
+  tipDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    marginTop: 6,
+    marginRight: 10,
+  },
+  tipText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    flex: 1,
+    lineHeight: 18,
+    letterSpacing: 0.3,
+  },
+  scoringCard: {
+    marginBottom: 24,
+    padding: 24,
+  },
+  scoringText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 20,
+    letterSpacing: 0.3,
+  },
+  actionContainer: {
+    paddingBottom: 40,
+  },
+  startButton: {
+    width: "100%",
   },
 });

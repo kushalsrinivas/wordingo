@@ -1,5 +1,8 @@
+import { GlassCard } from "@/components/ui/GlassCard";
+import { MinimalButton } from "@/components/ui/MinimalButton";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { CurrentGame, gameEngine, GameSession } from "@/services/gameEngine";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -25,6 +28,8 @@ export default function GameScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timer, setTimer] = useState(0);
   const [fadeAnim] = useState(new Animated.Value(0));
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? "light"];
 
   useEffect(() => {
     initializeGame();
@@ -158,119 +163,79 @@ export default function GameScreen() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const getGameTypeTitle = (type: string) => {
+    switch (type) {
+      case "anagram":
+        return "Anagram Solver";
+      case "association":
+        return "Word Association";
+      case "fill_blanks":
+        return "Fill the Blanks";
+      case "spelling":
+        return "Spelling Challenge";
+      default:
+        return "Word Game";
+    }
+  };
+
+  const getGameInstruction = (type: string) => {
+    switch (type) {
+      case "anagram":
+        return "Rearrange the letters to form a word";
+      case "association":
+        return "Find the opposite or related word";
+      case "fill_blanks":
+        return "Complete the sentence";
+      case "spelling":
+        return "Spell the word correctly";
+      default:
+        return "Answer the question";
+    }
+  };
+
   const renderGameContent = () => {
     if (!currentGame) return null;
 
     const { game, question } = currentGame;
 
-    switch (game.type) {
-      case "anagram":
-        return (
-          <View style={styles.gameContent}>
-            <Text style={styles.gameTitle}>🔤 Anagram Solver</Text>
-            <Text style={styles.instruction}>
-              Rearrange the letters to form a word
-            </Text>
-            <View style={styles.questionContainer}>
-              <Text style={styles.questionText}>{question.question}</Text>
-            </View>
-            <TextInput
-              style={styles.textInput}
-              value={userAnswer}
-              onChangeText={setUserAnswer}
-              placeholder="Enter your answer"
-              placeholderTextColor="rgba(255,255,255,0.6)"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-        );
+    return (
+      <View style={styles.gameContent}>
+        <Text style={[styles.gameTitle, { color: colors.text }]}>
+          {getGameTypeTitle(game.type)}
+        </Text>
+        <Text style={[styles.instruction, { color: colors.textSecondary }]}>
+          {getGameInstruction(game.type)}
+        </Text>
 
-      case "association":
-        return (
-          <View style={styles.gameContent}>
-            <Text style={styles.gameTitle}>🔗 Word Association</Text>
-            <Text style={styles.instruction}>
-              Find the opposite or related word
-            </Text>
-            <View style={styles.questionContainer}>
-              <Text style={styles.questionText}>{question.question}</Text>
-            </View>
-            {renderMultipleChoice()}
-          </View>
-        );
+        <GlassCard style={styles.questionCard}>
+          <Text style={[styles.questionText, { color: colors.text }]}>
+            {question.question}
+          </Text>
+        </GlassCard>
 
-      case "fill_blanks":
-        return (
-          <View style={styles.gameContent}>
-            <Text style={styles.gameTitle}>📝 Fill in the Blanks</Text>
-            <Text style={styles.instruction}>Complete the sentence</Text>
-            <View style={styles.questionContainer}>
-              <Text style={styles.questionText}>{question.question}</Text>
-            </View>
-            <TextInput
-              style={styles.textInput}
-              value={userAnswer}
-              onChangeText={setUserAnswer}
-              placeholder="Enter the missing word"
-              placeholderTextColor="rgba(255,255,255,0.6)"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-        );
-
-      case "odd_one_out":
-        return (
-          <View style={styles.gameContent}>
-            <Text style={styles.gameTitle}>🎯 Odd One Out</Text>
-            <Text style={styles.instruction}>
-              Find the word that doesn't belong
-            </Text>
-            <View style={styles.questionContainer}>
-              <Text style={styles.questionText}>Which one doesn't belong?</Text>
-            </View>
-            {renderMultipleChoice()}
-          </View>
-        );
-
-      case "synonym":
-        return (
-          <View style={styles.gameContent}>
-            <Text style={styles.gameTitle}>📚 Synonym Match</Text>
-            <Text style={styles.instruction}>
-              Find the word with similar meaning
-            </Text>
-            <View style={styles.questionContainer}>
-              <Text style={styles.questionText}>{question.question}</Text>
-            </View>
-            {renderMultipleChoice()}
-          </View>
-        );
-
-      case "spelling":
-        return (
-          <View style={styles.gameContent}>
-            <Text style={styles.gameTitle}>🐝 Spelling Bee</Text>
-            <Text style={styles.instruction}>Spell the word correctly</Text>
-            <View style={styles.questionContainer}>
-              <Text style={styles.questionText}>{question.question}</Text>
-            </View>
-            <TextInput
-              style={styles.textInput}
-              value={userAnswer}
-              onChangeText={setUserAnswer}
-              placeholder="Spell the word"
-              placeholderTextColor="rgba(255,255,255,0.6)"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-        );
-
-      default:
-        return null;
-    }
+        {game.type === "anagram" ||
+        game.type === "fill_blanks" ||
+        game.type === "spelling" ? (
+          <TextInput
+            style={[
+              styles.textInput,
+              {
+                color: colors.text,
+                borderColor: colors.border,
+              },
+            ]}
+            value={userAnswer}
+            onChangeText={setUserAnswer}
+            placeholder="Enter your answer"
+            placeholderTextColor={colors.textTertiary}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        ) : (
+          renderMultipleChoice()
+        )}
+      </View>
+    );
   };
 
   const renderMultipleChoice = () => {
@@ -283,21 +248,30 @@ export default function GameScreen() {
         {options.map((option: string, index: number) => (
           <TouchableOpacity
             key={index}
-            style={[
-              styles.optionButton,
-              selectedOption === option && styles.selectedOption,
-            ]}
+            style={styles.optionContainer}
             onPress={() => setSelectedOption(option)}
             activeOpacity={0.7}
           >
-            <Text
+            <GlassCard
               style={[
-                styles.optionText,
-                selectedOption === option && styles.selectedOptionText,
+                styles.optionCard,
+                selectedOption === option && {
+                  backgroundColor: colors.overlay,
+                },
               ]}
             >
-              {option}
-            </Text>
+              <Text
+                style={[
+                  styles.optionText,
+                  { color: colors.text },
+                  selectedOption === option && {
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
+                {option}
+              </Text>
+            </GlassCard>
           </TouchableOpacity>
         ))}
       </View>
@@ -306,59 +280,54 @@ export default function GameScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <LinearGradient colors={["#4facfe", "#00f2fe"]} style={styles.gradient}>
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading next challenge...</Text>
-          </View>
-        </LinearGradient>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: colors.text }]}>
+            Loading next challenge...
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={["#4facfe", "#00f2fe"]} style={styles.gradient}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.roundText}>Round {session?.currentRound}</Text>
-            <Text style={styles.streakText}>
-              Streak: {session?.currentStreak}
-            </Text>
-          </View>
-          <View style={styles.headerRight}>
-            <Text style={styles.timerText}>{formatTime(timer)}</Text>
-          </View>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.roundText, { color: colors.text }]}>
+            Round {session?.currentRound}
+          </Text>
+          <Text style={[styles.streakText, { color: colors.textSecondary }]}>
+            Streak: {session?.currentStreak}
+          </Text>
         </View>
-
-        {/* Game Content */}
-        <Animated.View style={[styles.gameContainer, { opacity: fadeAnim }]}>
-          {renderGameContent()}
-        </Animated.View>
-
-        {/* Submit Button */}
-        <View style={styles.submitContainer}>
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              isSubmitting && styles.submitButtonDisabled,
-            ]}
-            onPress={submitAnswer}
-            activeOpacity={isSubmitting ? 1 : 0.8}
-            disabled={isSubmitting}
-          >
-            <LinearGradient
-              colors={isSubmitting ? ["#999", "#777"] : ["#ff6b6b", "#ee5a24"]}
-              style={styles.submitGradient}
-            >
-              <Text style={styles.submitText}>
-                {isSubmitting ? "Submitting..." : "Submit Answer"}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <Text style={[styles.timerText, { color: colors.text }]}>
+            {formatTime(timer)}
+          </Text>
         </View>
-      </LinearGradient>
+      </View>
+
+      {/* Game Content */}
+      <Animated.View style={[styles.gameContainer, { opacity: fadeAnim }]}>
+        {renderGameContent()}
+      </Animated.View>
+
+      {/* Submit Button */}
+      <View style={styles.submitContainer}>
+        <MinimalButton
+          title={isSubmitting ? "Submitting..." : "Submit Answer"}
+          onPress={submitAnswer}
+          variant="primary"
+          disabled={isSubmitting}
+          style={styles.submitButton}
+        />
+      </View>
     </SafeAreaView>
   );
 }
@@ -367,16 +336,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  gradient: {
-    flex: 1,
-  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 20,
-    paddingBottom: 10,
+    paddingBottom: 20,
   },
   headerLeft: {
     alignItems: "flex-start",
@@ -385,22 +351,24 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   roundText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 16,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.3,
   },
   streakText: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.8)",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.3,
+    marginTop: 2,
   },
   timerText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 20,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: -0.3,
   },
   gameContainer: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
   gameContent: {
     flex: 1,
@@ -408,87 +376,67 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   gameTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 10,
+    fontSize: 24,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 8,
     textAlign: "center",
+    letterSpacing: -0.3,
   },
   instruction: {
-    fontSize: 16,
-    color: "rgba(255,255,255,0.8)",
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
     textAlign: "center",
-    marginBottom: 30,
+    marginBottom: 40,
+    letterSpacing: 0.3,
   },
-  questionContainer: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 20,
-    padding: 30,
-    marginBottom: 30,
-    minHeight: 100,
-    justifyContent: "center",
-    alignItems: "center",
+  questionCard: {
     width: "100%",
+    minHeight: 120,
+    marginBottom: 40,
   },
   questionText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 20,
+    fontFamily: "Inter_500Medium",
     textAlign: "center",
+    padding: 24,
+    letterSpacing: -0.2,
   },
   textInput: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 15,
+    borderWidth: 1,
+    borderRadius: 16,
     padding: 20,
-    fontSize: 18,
-    color: "white",
+    fontSize: 16,
+    fontFamily: "Inter_400Regular",
     width: "100%",
     textAlign: "center",
+    backgroundColor: "transparent",
+    letterSpacing: 0.3,
   },
   optionsContainer: {
     width: "100%",
+    gap: 12,
   },
-  optionButton: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 15,
-    padding: 20,
-    marginVertical: 8,
+  optionContainer: {
+    width: "100%",
+  },
+  optionCard: {
+    minHeight: 56,
+    justifyContent: "center",
     alignItems: "center",
-  },
-  selectedOption: {
-    backgroundColor: "rgba(255,255,255,0.4)",
+    paddingHorizontal: 20,
   },
   optionText: {
-    fontSize: 18,
-    color: "white",
-    fontWeight: "600",
-  },
-  selectedOptionText: {
-    fontWeight: "bold",
+    fontSize: 16,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    letterSpacing: 0.3,
   },
   submitContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingBottom: 40,
   },
   submitButton: {
-    height: 60,
-    borderRadius: 30,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  submitGradient: {
-    flex: 1,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  submitText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "white",
+    width: "100%",
   },
   loadingContainer: {
     flex: 1,
@@ -496,8 +444,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    fontSize: 20,
-    color: "white",
-    fontWeight: "600",
+    fontSize: 16,
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.3,
   },
 });

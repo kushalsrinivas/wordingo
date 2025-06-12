@@ -3,24 +3,44 @@
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+/**
+ * Minimalistic Black & White Color Scheme with Glassmorphism
+ * Pure black and white theme with subtle transparent variations for glassmorphism effects
+ */
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: '#000000',
+    background: '#FFFFFF',
+    tint: '#000000',
+    icon: '#000000',
+    tabIconDefault: '#000000',
+    tabIconSelected: '#000000',
+    // Glassmorphism colors
+    glassBackground: 'rgba(255, 255, 255, 0.1)',
+    glassBorder: 'rgba(255, 255, 255, 0.2)',
+    glassShadow: 'rgba(0, 0, 0, 0.05)',
+    // Subtle variations
+    textSecondary: 'rgba(0, 0, 0, 0.7)',
+    textTertiary: 'rgba(0, 0, 0, 0.5)',
+    border: 'rgba(0, 0, 0, 0.1)',
+    overlay: 'rgba(0, 0, 0, 0.02)',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    text: '#FFFFFF',
+    background: '#000000',
+    tint: '#FFFFFF',
+    icon: '#FFFFFF',
+    tabIconDefault: '#FFFFFF',
+    tabIconSelected: '#FFFFFF',
+    // Glassmorphism colors for dark mode
+    glassBackground: 'rgba(0, 0, 0, 0.1)',
+    glassBorder: 'rgba(0, 0, 0, 0.2)',
+    glassShadow: 'rgba(255, 255, 255, 0.05)',
+    // Subtle variations
+    textSecondary: 'rgba(255, 255, 255, 0.7)',
+    textTertiary: 'rgba(255, 255, 255, 0.5)',
+    border: 'rgba(255, 255, 255, 0.1)',
+    overlay: 'rgba(255, 255, 255, 0.02)',
   },
 };
