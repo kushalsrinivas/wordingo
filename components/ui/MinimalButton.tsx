@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   ViewStyle,
 } from "react-native";
-import { GlassCard } from "./GlassCard";
 
 interface MinimalButtonProps {
   title: string;
@@ -34,6 +33,7 @@ export function MinimalButton({
     return (
       <TouchableOpacity
         style={[
+          styles.button,
           styles.primaryButton,
           {
             backgroundColor: colors.text,
@@ -48,6 +48,7 @@ export function MinimalButton({
       >
         <Text
           style={[
+            styles.buttonText,
             styles.primaryButtonText,
             {
               color: colors.background,
@@ -64,31 +65,39 @@ export function MinimalButton({
 
   return (
     <TouchableOpacity
-      style={[styles.secondaryButtonContainer, style]}
+      style={[
+        styles.button,
+        styles.secondaryButton,
+        {
+          backgroundColor: colors.glassBackground,
+          borderColor: colors.glassBorder,
+        },
+        disabled && styles.disabled,
+        style,
+      ]}
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.8}
     >
-      <GlassCard style={styles.secondaryButton} borderRadius={24}>
-        <Text
-          style={[
-            styles.secondaryButtonText,
-            {
-              color: colors.text,
-              fontFamily: "Inter_400Regular",
-            },
-            textStyle,
-          ]}
-        >
-          {title}
-        </Text>
-      </GlassCard>
+      <Text
+        style={[
+          styles.buttonText,
+          styles.secondaryButtonText,
+          {
+            color: colors.text,
+            fontFamily: "Inter_400Regular",
+          },
+          textStyle,
+        ]}
+      >
+        {title}
+      </Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  primaryButton: {
+  button: {
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 24,
@@ -97,20 +106,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 56,
   },
-  primaryButtonText: {
-    fontSize: 16,
-    letterSpacing: 0.5,
-  },
-  secondaryButtonContainer: {
-    minHeight: 48,
+  primaryButton: {
+    // Primary button specific styles
   },
   secondaryButton: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    // Secondary button with glass effect
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  buttonText: {
+    fontSize: 16,
+    letterSpacing: 0.5,
+    textAlign: "center",
+  },
+  primaryButtonText: {
+    // Primary text specific styles
   },
   secondaryButtonText: {
     fontSize: 14,

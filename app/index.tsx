@@ -139,13 +139,13 @@ export default function HomeScreen() {
           <MinimalButton
             title="View Stats"
             onPress={viewStats}
-            variant="secondary"
+            variant="primary"
             style={styles.secondaryButton}
           />
           <MinimalButton
             title="How to Play"
             onPress={howToPlay}
-            variant="secondary"
+            variant="primary"
             style={styles.secondaryButton}
           />
         </View>
@@ -242,9 +242,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 16,
     marginBottom: 60,
+    paddingHorizontal: 4,
   },
   secondaryButton: {
     flex: 1,
+    minHeight: 52,
   },
   footer: {
     alignItems: "center",
