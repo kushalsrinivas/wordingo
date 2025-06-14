@@ -4,7 +4,7 @@ import { MinimalButton } from "@/components/ui/MinimalButton";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { CurrentGame, gameEngine, GameSession } from "@/services/gameEngine";
-import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -295,7 +295,7 @@ export default function GameScreen() {
         </View>
 
         <View style={styles.questionContainer}>
-          <ExpoLinearGradient
+          <LinearGradient
             colors={[
               colorScheme === "dark"
                 ? "rgba(255, 255, 255, 0.05)"
@@ -311,7 +311,7 @@ export default function GameScreen() {
                 {question.question}
               </Text>
             </GlassCard>
-          </ExpoLinearGradient>
+          </LinearGradient>
         </View>
 
         <View style={styles.answerContainer}>
@@ -319,7 +319,7 @@ export default function GameScreen() {
           game.type === "fill_blanks" ||
           game.type === "spelling" ? (
             <View style={styles.textInputContainer}>
-              <ExpoLinearGradient
+              <LinearGradient
                 colors={[
                   colorScheme === "dark"
                     ? "rgba(255, 255, 255, 0.03)"
@@ -345,7 +345,7 @@ export default function GameScreen() {
                     </Text>
                   )}
                 </GlassCard>
-              </ExpoLinearGradient>
+              </LinearGradient>
             </View>
           ) : (
             renderMultipleChoice()
@@ -369,21 +369,20 @@ export default function GameScreen() {
             option.toLowerCase() === answerResult.correctAnswer.toLowerCase();
           const isIncorrectSelected =
             answerResult && !answerResult.isCorrect && isSelected;
-          const isDisabled = selectedOption !== "" && option !== selectedOption;
 
           return (
             <TouchableOpacity
               key={index}
               style={styles.optionContainer}
               onPress={() => {
-                if (!answerResult && !isDisabled) {
+                if (!answerResult) {
                   setSelectedOption(option);
                 }
               }}
               activeOpacity={0.7}
-              disabled={isDisabled || !!answerResult}
+              disabled={!!answerResult}
             >
-              <ExpoLinearGradient
+              <LinearGradient
                 colors={
                   isCorrectOption
                     ? ["rgba(34, 197, 94, 0.15)", "rgba(34, 197, 94, 0.05)"]
@@ -400,56 +399,52 @@ export default function GameScreen() {
                           : "rgba(0, 0, 0, 0.005)",
                       ]
                 }
-                style={styles.optionGradient}
+                style={StyleSheet.flatten([
+                  styles.optionCard,
+                  isSelected &&
+                    !answerResult && {
+                      borderWidth: 2,
+                      borderColor: colors.highlight + "60",
+                      shadowColor: colors.highlight,
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 8,
+                      elevation: 8,
+                    },
+                  isCorrectOption && {
+                    borderWidth: 2,
+                    borderColor: "#22c55e",
+                    shadowColor: "#22c55e",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 8,
+                  },
+                  isIncorrectSelected && {
+                    borderWidth: 2,
+                    borderColor: "#ef4444",
+                    shadowColor: "#ef4444",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 8,
+                  },
+                ])}
               >
-                <GlassCard
-                  style={StyleSheet.flatten([
-                    styles.optionCard,
-                    isSelected &&
-                      !answerResult && {
-                        borderWidth: 2,
-                        borderColor: colors.highlight + "60",
-                        shadowColor: colors.highlight,
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 8,
-                        elevation: 8,
-                      },
-                    isCorrectOption && {
-                      borderWidth: 2,
-                      borderColor: "#22c55e",
-                      shadowColor: "#22c55e",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 8,
-                    },
-                    isIncorrectSelected && {
-                      borderWidth: 2,
-                      borderColor: "#ef4444",
-                      shadowColor: "#ef4444",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 8,
-                    },
-                  ])}
+                <Text
+                  style={[
+                    styles.optionText,
+                    { color: colors.text },
+                    ...(isSelected && !answerResult
+                      ? [{ fontFamily: "Inter_600SemiBold" as const }]
+                      : []),
+                  ]}
                 >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      { color: colors.text },
-                      ...(isSelected && !answerResult
-                        ? [{ fontFamily: "Inter_600SemiBold" as const }]
-                        : []),
-                    ]}
-                  >
-                    {option}
-                    {isCorrectOption && " ✓"}
-                    {isIncorrectSelected && " ✗"}
-                  </Text>
-                </GlassCard>
-              </ExpoLinearGradient>
+                  {option}
+                  {isCorrectOption && " ✓"}
+                  {isIncorrectSelected && " ✗"}
+                </Text>
+              </LinearGradient>
             </TouchableOpacity>
           );
         })}
@@ -486,7 +481,7 @@ export default function GameScreen() {
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
       >
-        <ExpoLinearGradient
+        <LinearGradient
           colors={[
             colors.background,
             colorScheme === "dark"
@@ -512,7 +507,7 @@ export default function GameScreen() {
               />
             </View>
           </View>
-        </ExpoLinearGradient>
+        </LinearGradient>
       </SafeAreaView>
     );
   }
@@ -521,7 +516,7 @@ export default function GameScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <ExpoLinearGradient
+      <LinearGradient
         colors={[
           colors.background,
           colorScheme === "dark"
@@ -574,14 +569,14 @@ export default function GameScreen() {
                 { transform: [{ scale: pulseAnim }] },
               ]}
             >
-              <ExpoLinearGradient
+              <LinearGradient
                 colors={[colors.highlight + "20", colors.highlight + "10"]}
                 style={styles.timerGradient}
               >
                 <Text style={[styles.timerText, { color: colors.text }]}>
                   {formatTime(timer)}
                 </Text>
-              </ExpoLinearGradient>
+              </LinearGradient>
             </Animated.View>
           </View>
         </View>
@@ -597,7 +592,7 @@ export default function GameScreen() {
         {/* Submit Button or Feedback */}
         <View style={styles.submitContainer}>
           {!answerResult ? (
-            <ExpoLinearGradient
+            <LinearGradient
               colors={
                 canSubmit() && !isSubmitting
                   ? [colors.highlight, colors.highlight + "CC"]
@@ -612,10 +607,10 @@ export default function GameScreen() {
                 disabled={isSubmitting || !canSubmit()}
                 style={styles.submitButton}
               />
-            </ExpoLinearGradient>
+            </LinearGradient>
           ) : (
             <View style={styles.feedbackContainer}>
-              <ExpoLinearGradient
+              <LinearGradient
                 colors={
                   answerResult.isCorrect
                     ? ["rgba(34, 197, 94, 0.2)", "rgba(34, 197, 94, 0.1)"]
@@ -643,11 +638,11 @@ export default function GameScreen() {
                     Correct answer: {answerResult.correctAnswer}
                   </Text>
                 )}
-              </ExpoLinearGradient>
+              </LinearGradient>
             </View>
           )}
         </View>
-      </ExpoLinearGradient>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
@@ -664,8 +659,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 40,
     paddingBottom: 24,
+    marginTop: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
@@ -831,10 +827,6 @@ const styles = StyleSheet.create({
   optionContainer: {
     width: "100%",
   },
-  optionGradient: {
-    borderRadius: 20,
-    padding: 2,
-  },
   optionCard: {
     minHeight: 72,
     justifyContent: "center",
@@ -842,6 +834,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderRadius: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
   },
   optionText: {
     fontSize: 18,
