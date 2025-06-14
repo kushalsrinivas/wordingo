@@ -36,13 +36,17 @@ export default function GameScreen() {
   }, []);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (session?.isActive) {
       interval = setInterval(() => {
         setTimer((prev) => prev + 1);
       }, 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [session?.isActive]);
 
   const initializeGame = async () => {
@@ -59,7 +63,9 @@ export default function GameScreen() {
       await loadNextGame();
     } catch (error) {
       console.error("Failed to initialize game:", error);
-      Alert.alert("Error", `Failed to start game: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      Alert.alert("Error", `Failed to start game: ${errorMessage}`);
       router.back();
     }
   };
@@ -100,7 +106,9 @@ export default function GameScreen() {
       setIsLoading(false);
     } catch (error) {
       console.error("Failed to load next game:", error);
-      Alert.alert("Error", `Failed to load game: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      Alert.alert("Error", `Failed to load game: ${errorMessage}`);
       setIsLoading(false);
     }
   };
@@ -151,7 +159,9 @@ export default function GameScreen() {
       }
     } catch (error) {
       console.error("Failed to submit answer:", error);
-      Alert.alert("Error", `Failed to submit answer: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      Alert.alert("Error", `Failed to submit answer: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -200,40 +210,47 @@ export default function GameScreen() {
 
     return (
       <View style={styles.gameContent}>
-        <Text style={[styles.gameTitle, { color: colors.text }]}>
-          {getGameTypeTitle(game.type)}
-        </Text>
-        <Text style={[styles.instruction, { color: colors.textSecondary }]}>
-          {getGameInstruction(game.type)}
-        </Text>
-
-        <GlassCard style={styles.questionCard}>
-          <Text style={[styles.questionText, { color: colors.text }]}>
-            {question.question}
+        <View style={styles.gameHeader}>
+          <Text style={[styles.gameTitle, { color: colors.text }]}>
+            {getGameTypeTitle(game.type)}
           </Text>
-        </GlassCard>
+          <Text style={[styles.instruction, { color: colors.textSecondary }]}>
+            {getGameInstruction(game.type)}
+          </Text>
+        </View>
 
-        {game.type === "anagram" ||
-        game.type === "fill_blanks" ||
-        game.type === "spelling" ? (
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                color: colors.text,
-                borderColor: colors.border,
-              },
-            ]}
-            value={userAnswer}
-            onChangeText={setUserAnswer}
-            placeholder="Enter your answer"
-            placeholderTextColor={colors.textTertiary}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        ) : (
-          renderMultipleChoice()
-        )}
+        <View style={styles.questionContainer}>
+          <GlassCard style={styles.questionCard}>
+            <Text style={[styles.questionText, { color: colors.text }]}>
+              {question.question}
+            </Text>
+          </GlassCard>
+        </View>
+
+        <View style={styles.answerContainer}>
+          {game.type === "anagram" ||
+          game.type === "fill_blanks" ||
+          game.type === "spelling" ? (
+            <TextInput
+              style={[
+                styles.textInput,
+                {
+                  color: colors.text,
+                  borderColor: colors.border,
+                  backgroundColor: colors.glassBackground,
+                },
+              ]}
+              value={userAnswer}
+              onChangeText={setUserAnswer}
+              placeholder="Enter your answer"
+              placeholderTextColor={colors.textTertiary}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          ) : (
+            renderMultipleChoice()
+          )}
+        </View>
       </View>
     );
   };
@@ -245,35 +262,37 @@ export default function GameScreen() {
 
     return (
       <View style={styles.optionsContainer}>
-        {options.map((option: string, index: number) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.optionContainer}
-            onPress={() => setSelectedOption(option)}
-            activeOpacity={0.7}
-          >
-            <GlassCard
-              style={[
-                styles.optionCard,
-                selectedOption === option && {
-                  backgroundColor: colors.overlay,
-                },
-              ]}
+        {options.map((option: string, index: number) => {
+          const isSelected = selectedOption === option;
+
+          return (
+            <TouchableOpacity
+              key={index}
+              style={styles.optionContainer}
+              onPress={() => setSelectedOption(option)}
+              activeOpacity={0.7}
             >
-              <Text
-                style={[
-                  styles.optionText,
-                  { color: colors.text },
-                  selectedOption === option && {
-                    fontFamily: "Inter_500Medium",
-                  },
-                ]}
+              <GlassCard
+                style={StyleSheet.flatten([
+                  styles.optionCard,
+                  isSelected && { backgroundColor: colors.overlay },
+                ])}
               >
-                {option}
-              </Text>
-            </GlassCard>
-          </TouchableOpacity>
-        ))}
+                <Text
+                  style={[
+                    styles.optionText,
+                    { color: colors.text },
+                    ...(isSelected
+                      ? [{ fontFamily: "Inter_500Medium" as const }]
+                      : []),
+                  ]}
+                >
+                  {option}
+                </Text>
+              </GlassCard>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     );
   };
@@ -343,6 +362,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(0, 0, 0, 0.05)",
   },
   headerLeft: {
     alignItems: "flex-start",
@@ -351,20 +372,20 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   roundText: {
-    fontSize: 16,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 0.3,
+    fontSize: 18,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: -0.2,
   },
   streakText: {
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
-    letterSpacing: 0.3,
-    marginTop: 2,
+    letterSpacing: 0.2,
+    marginTop: 4,
   },
   timerText: {
-    fontSize: 20,
-    fontFamily: "Inter_600SemiBold",
-    letterSpacing: -0.3,
+    fontSize: 24,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.5,
   },
   gameContainer: {
     flex: 1,
@@ -372,71 +393,89 @@ const styles = StyleSheet.create({
   },
   gameContent: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "space-between",
+    paddingVertical: 32,
+  },
+  gameHeader: {
     alignItems: "center",
+    marginBottom: 32,
   },
   gameTitle: {
-    fontSize: 24,
-    fontFamily: "Inter_600SemiBold",
-    marginBottom: 8,
+    fontSize: 28,
+    fontFamily: "Inter_700Bold",
+    marginBottom: 12,
     textAlign: "center",
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
   },
   instruction: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: "Inter_400Regular",
     textAlign: "center",
-    marginBottom: 40,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    lineHeight: 22,
+  },
+  questionContainer: {
+    flex: 1,
+    justifyContent: "center",
+    marginBottom: 32,
   },
   questionCard: {
     width: "100%",
-    minHeight: 120,
-    marginBottom: 40,
+    minHeight: 140,
+    justifyContent: "center",
+    alignItems: "center",
   },
   questionText: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: "Inter_500Medium",
     textAlign: "center",
-    padding: 24,
-    letterSpacing: -0.2,
+    padding: 32,
+    letterSpacing: -0.3,
+    lineHeight: 32,
+  },
+  answerContainer: {
+    width: "100%",
   },
   textInput: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 20,
-    fontSize: 16,
+    borderWidth: 2,
+    borderRadius: 20,
+    padding: 24,
+    fontSize: 18,
     fontFamily: "Inter_400Regular",
     width: "100%",
     textAlign: "center",
-    backgroundColor: "transparent",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    minHeight: 64,
   },
   optionsContainer: {
     width: "100%",
-    gap: 12,
+    gap: 16,
   },
   optionContainer: {
     width: "100%",
   },
   optionCard: {
-    minHeight: 56,
+    minHeight: 64,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: "Inter_400Regular",
     textAlign: "center",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    lineHeight: 24,
   },
   submitContainer: {
     paddingHorizontal: 24,
     paddingBottom: 40,
+    paddingTop: 20,
   },
   submitButton: {
     width: "100%",
+    minHeight: 64,
   },
   loadingContainer: {
     flex: 1,
@@ -444,8 +483,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: "Inter_400Regular",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
 });
