@@ -25,6 +25,7 @@ export const Colors = {
     textTertiary: 'rgba(0, 0, 0, 0.5)',
     border: 'rgba(0, 0, 0, 0.1)',
     overlay: 'rgba(0, 0, 0, 0.02)',
+    highlight: '#FFEB3B',
   },
   dark: {
     text: '#FFFFFF',
@@ -42,5 +43,6 @@ export const Colors = {
     textTertiary: 'rgba(255, 255, 255, 0.5)',
     border: 'rgba(255, 255, 255, 0.1)',
     overlay: 'rgba(255, 255, 255, 0.02)',
+    highlight: '#FFEB3B',
   },
 };
