@@ -22,12 +22,12 @@ interface SessionSummary {
   correctAnswers: number;
   incorrectAnswers: number;
   averageTime: number;
-  gameBreakdown: Array<{
+  gameBreakdown: {
     gameName: string;
     played: number;
     correct: number;
     averageTime: number;
-  }>;
+  }[];
 }
 
 export default function ResultScreen() {
@@ -132,7 +132,7 @@ export default function ResultScreen() {
             Game Complete
           </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Here's how you performed
+            Here&apos;s how you performed
           </Text>
         </View>
 
@@ -167,37 +167,49 @@ export default function ResultScreen() {
 
           {/* Stats Grid */}
           <View style={styles.statsGrid}>
-            <GlassCard style={styles.statCard}>
-              <Text style={[styles.statNumber, { color: colors.text }]}>
-                {summary.totalGames}
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Total Games
-              </Text>
-            </GlassCard>
+            <View style={styles.statCardContainer}>
+              <GlassCard style={styles.statCard}>
+                <Text style={[styles.statNumber, { color: colors.text }]}>
+                  {summary.totalGames}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Total Games
+                </Text>
+              </GlassCard>
+            </View>
 
-            <GlassCard style={styles.statCard}>
-              <Text style={[styles.statNumber, { color: colors.text }]}>
-                {formatTime(summary.averageTime)}
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Avg Time
-              </Text>
-            </GlassCard>
+            <View style={styles.statCardContainer}>
+              <GlassCard style={styles.statCard}>
+                <Text style={[styles.statNumber, { color: colors.text }]}>
+                  {formatTime(summary.averageTime)}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Avg Time
+                </Text>
+              </GlassCard>
+            </View>
 
-            <GlassCard style={styles.statCard}>
-              <Text style={[styles.statNumber, { color: colors.text }]}>
-                {summary.totalGames > 0
-                  ? Math.round(
-                      (summary.correctAnswers / summary.totalGames) * 100
-                    )
-                  : 0}
-                %
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Accuracy
-              </Text>
-            </GlassCard>
+            <View style={styles.statCardContainer}>
+              <GlassCard style={styles.statCard}>
+                <Text style={[styles.statNumber, { color: colors.text }]}>
+                  {summary.totalGames > 0
+                    ? Math.round(
+                        (summary.correctAnswers / summary.totalGames) * 100
+                      )
+                    : 0}
+                  %
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Accuracy
+                </Text>
+              </GlassCard>
+            </View>
           </View>
 
           {/* Game Breakdown */}
@@ -206,43 +218,70 @@ export default function ResultScreen() {
               <Text style={[styles.breakdownTitle, { color: colors.text }]}>
                 Game Breakdown
               </Text>
-              {summary.gameBreakdown.map((game, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.gameBreakdownItem,
-                    index < summary.gameBreakdown.length - 1 && {
-                      borderBottomColor: colors.border,
-                      borderBottomWidth: 1,
-                    },
-                  ]}
-                >
-                  <View style={styles.gameInfo}>
-                    <Text style={[styles.gameName, { color: colors.text }]}>
-                      {game.gameName}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.gameStats,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {game.correct}/{game.played} correct •{" "}
-                      {formatTime(game.averageTime)} avg
-                    </Text>
+              <View style={styles.breakdownContent}>
+                {summary.gameBreakdown.map((game, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.gameBreakdownItem,
+                      index < summary.gameBreakdown.length - 1 && {
+                        borderBottomColor: colors.border,
+                        borderBottomWidth: StyleSheet.hairlineWidth,
+                      },
+                    ]}
+                  >
+                    <View style={styles.gameInfo}>
+                      <Text style={[styles.gameName, { color: colors.text }]}>
+                        {game.gameName}
+                      </Text>
+                      <View style={styles.gameStatsContainer}>
+                        <Text
+                          style={[
+                            styles.gameStats,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          {game.correct}/{game.played} correct
+                        </Text>
+                        <Text style={styles.statsSeparator}>•</Text>
+                        <Text
+                          style={[
+                            styles.gameStats,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          {formatTime(game.averageTime)} avg
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.gameScore}>
+                      <Text
+                        style={[styles.gamePercentage, { color: colors.text }]}
+                      >
+                        {game.played > 0
+                          ? Math.round((game.correct / game.played) * 100)
+                          : 0}
+                        %
+                      </Text>
+                      <View
+                        style={[
+                          styles.scoreIndicator,
+                          {
+                            backgroundColor:
+                              game.played > 0 &&
+                              (game.correct / game.played) * 100 >= 70
+                                ? "rgba(34, 197, 94, 0.2)"
+                                : game.played > 0 &&
+                                  (game.correct / game.played) * 100 >= 50
+                                ? "rgba(251, 191, 36, 0.2)"
+                                : "rgba(239, 68, 68, 0.2)",
+                          },
+                        ]}
+                      />
+                    </View>
                   </View>
-                  <View style={styles.gameScore}>
-                    <Text
-                      style={[styles.gamePercentage, { color: colors.text }]}
-                    >
-                      {game.played > 0
-                        ? Math.round((game.correct / game.played) * 100)
-                        : 0}
-                      %
-                    </Text>
-                  </View>
-                </View>
-              ))}
+                ))}
+              </View>
             </GlassCard>
           )}
 
@@ -304,118 +343,154 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scoreCard: {
-    marginBottom: 24,
-    minHeight: 160,
+    marginBottom: 32,
+    minHeight: 180,
   },
   scoreContent: {
     alignItems: "center",
-    padding: 32,
+    padding: 36,
   },
   scoreNumber: {
-    fontSize: 48,
-    fontFamily: "Inter_600SemiBold",
-    marginBottom: 8,
-    letterSpacing: -1,
+    fontSize: 56,
+    fontFamily: "Inter_700Bold",
+    marginBottom: 12,
+    letterSpacing: -1.5,
   },
   scoreLabel: {
-    fontSize: 16,
-    fontFamily: "Inter_500Medium",
-    marginBottom: 4,
-    letterSpacing: 0.3,
+    fontSize: 18,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 6,
+    letterSpacing: -0.1,
   },
   totalGames: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
-    marginBottom: 16,
-    letterSpacing: 0.3,
+    marginBottom: 20,
+    letterSpacing: 0.2,
+    opacity: 0.7,
   },
   performanceIndicator: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: "rgba(0, 0, 0, 0.08)",
   },
   performanceText: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 0.5,
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.3,
     textTransform: "uppercase",
   },
   statsGrid: {
+    width: "100%",
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 24,
-    gap: 12,
+    justifyContent: "space-around",
+    marginBottom: 32,
+  },
+  statCardContainer: {
+    marginBottom: 12,
+    marginTop: 0,
+    width: "33%",
   },
   statCard: {
-    flex: 1,
-    minHeight: 100,
+    minHeight: 130,
+    width: "100%",
+    textAlign: "center",
+    alignSelf: "center",
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 28,
     fontFamily: "Inter_600SemiBold",
-    marginBottom: 6,
-    letterSpacing: -0.3,
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   statLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
     textAlign: "center",
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
     textTransform: "uppercase",
+    opacity: 0.8,
   },
   breakdownCard: {
     marginBottom: 24,
-    padding: 24,
+    padding: 0,
   },
   breakdownTitle: {
-    fontSize: 18,
-    fontFamily: "Inter_500Medium",
-    marginBottom: 20,
+    fontSize: 20,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 0,
     textAlign: "center",
-    letterSpacing: 0.3,
+    letterSpacing: -0.2,
+    paddingHorizontal: 28,
+    paddingTop: 28,
+    paddingBottom: 20,
+  },
+  breakdownContent: {
+    paddingHorizontal: 28,
+    paddingBottom: 28,
   },
   gameBreakdownItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 16,
+    alignItems: "flex-start",
+    paddingVertical: 18,
+    paddingHorizontal: 0,
   },
   gameInfo: {
     flex: 1,
+    paddingRight: 16,
   },
   gameName: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    marginBottom: 4,
-    letterSpacing: 0.3,
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 8,
+    letterSpacing: -0.1,
+  },
+  gameStatsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   gameStats: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    opacity: 0.8,
+  },
+  statsSeparator: {
+    fontSize: 13,
+    marginHorizontal: 8,
+    opacity: 0.5,
   },
   gameScore: {
     alignItems: "flex-end",
+    position: "relative",
   },
   gamePercentage: {
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
-    letterSpacing: -0.2,
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.3,
+    marginBottom: 4,
+  },
+  scoreIndicator: {
+    width: 32,
+    height: 4,
+    borderRadius: 2,
   },
   messageCard: {
     marginBottom: 24,
-    padding: 24,
+    padding: 28,
   },
   messageText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
     textAlign: "center",
-    lineHeight: 20,
-    letterSpacing: 0.3,
+    lineHeight: 22,
+    letterSpacing: 0.1,
+    opacity: 0.9,
   },
   actionsContainer: {
     paddingBottom: 40,
