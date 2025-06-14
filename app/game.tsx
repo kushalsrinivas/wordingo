@@ -1,3 +1,4 @@
+import { CustomKeyboard } from "@/components/ui/CustomKeyboard";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { MinimalButton } from "@/components/ui/MinimalButton";
 import { Colors } from "@/constants/Colors";
@@ -12,7 +13,6 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -231,22 +231,23 @@ export default function GameScreen() {
           {game.type === "anagram" ||
           game.type === "fill_blanks" ||
           game.type === "spelling" ? (
-            <TextInput
-              style={[
-                styles.textInput,
-                {
-                  color: colors.text,
-                  borderColor: colors.border,
-                  backgroundColor: colors.glassBackground,
-                },
-              ]}
-              value={userAnswer}
-              onChangeText={setUserAnswer}
-              placeholder="Enter your answer"
-              placeholderTextColor={colors.textTertiary}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={styles.textInputContainer}>
+              <GlassCard style={styles.answerDisplay}>
+                <Text style={[styles.answerText, { color: colors.text }]}>
+                  {userAnswer || ""}
+                </Text>
+                {!userAnswer && (
+                  <Text
+                    style={[
+                      styles.placeholderText,
+                      { color: colors.textTertiary },
+                    ]}
+                  >
+                    Enter your answer
+                  </Text>
+                )}
+              </GlassCard>
+            </View>
           ) : (
             renderMultipleChoice()
           )}
@@ -297,6 +298,22 @@ export default function GameScreen() {
     );
   };
 
+  const handleKeyPress = (key: string) => {
+    setUserAnswer((prev) => prev + key.toLowerCase());
+  };
+
+  const handleDelete = () => {
+    setUserAnswer((prev) => prev.slice(0, -1));
+  };
+
+  const isTextBasedGame = (gameType: string) => {
+    return (
+      gameType === "anagram" ||
+      gameType === "fill_blanks" ||
+      gameType === "spelling"
+    );
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView
@@ -336,6 +353,11 @@ export default function GameScreen() {
       <Animated.View style={[styles.gameContainer, { opacity: fadeAnim }]}>
         {renderGameContent()}
       </Animated.View>
+
+      {/* Custom Keyboard - Only show for text-based games */}
+      {currentGame && isTextBasedGame(currentGame.game.type) && (
+        <CustomKeyboard onKeyPress={handleKeyPress} onDelete={handleDelete} />
+      )}
 
       {/* Submit Button */}
       <View style={styles.submitContainer}>
@@ -436,16 +458,28 @@ const styles = StyleSheet.create({
   answerContainer: {
     width: "100%",
   },
-  textInput: {
-    borderWidth: 2,
-    borderRadius: 20,
-    padding: 24,
+  textInputContainer: {
+    width: "100%",
+  },
+  answerDisplay: {
+    width: "100%",
+    minHeight: 64,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  answerText: {
     fontSize: 18,
     fontFamily: "Inter_400Regular",
-    width: "100%",
     textAlign: "center",
     letterSpacing: 0.2,
-    minHeight: 64,
+    lineHeight: 24,
+  },
+  placeholderText: {
+    fontSize: 18,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    letterSpacing: 0.2,
+    lineHeight: 24,
   },
   optionsContainer: {
     width: "100%",
