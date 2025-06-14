@@ -149,86 +149,110 @@ export default function StatsScreen() {
         <ScrollView
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
         >
           {/* Performance Level Card */}
           <GlassCard style={styles.levelCard}>
-            <Text style={[styles.levelText, { color: colors.text }]}>
-              {performanceLevel}
-            </Text>
-            <Text
-              style={[styles.levelDescription, { color: colors.textSecondary }]}
-            >
-              {getPerformanceMessage(performanceLevel)}
-            </Text>
+            <View style={styles.levelContent}>
+              <Text style={[styles.levelText, { color: colors.text }]}>
+                {performanceLevel}
+              </Text>
+              <Text
+                style={[
+                  styles.levelDescription,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {getPerformanceMessage(performanceLevel)}
+              </Text>
+            </View>
           </GlassCard>
 
           {/* Main Stats Grid */}
           <View style={styles.statsGrid}>
             <GlassCard style={styles.statCard}>
-              <Text style={[styles.statNumber, { color: colors.text }]}>
-                {userStats.total_games}
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Total Games
-              </Text>
+              <View style={styles.statContent}>
+                <Text style={[styles.statNumber, { color: colors.text }]}>
+                  {userStats.total_games}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Total Games
+                </Text>
+              </View>
             </GlassCard>
 
             <GlassCard style={styles.statCard}>
-              <Text style={[styles.statNumber, { color: colors.text }]}>
-                {userStats.longest_streak}
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                Best Streak
-              </Text>
+              <View style={styles.statContent}>
+                <Text style={[styles.statNumber, { color: colors.text }]}>
+                  {userStats.longest_streak}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Best Streak
+                </Text>
+              </View>
             </GlassCard>
           </View>
 
           {/* Daily Streak Section */}
           <GlassCard style={styles.streakCard}>
-            <Text style={[styles.streakTitle, { color: colors.text }]}>
-              Daily Streak
-            </Text>
-            <View style={styles.streakDisplay}>
-              <Text style={[styles.streakNumber, { color: colors.text }]}>
-                {userStats.daily_streak}
+            <View style={styles.streakContent}>
+              <Text style={[styles.streakTitle, { color: colors.text }]}>
+                Daily Streak
               </Text>
+              <View style={styles.streakDisplay}>
+                <Text style={[styles.streakNumber, { color: colors.text }]}>
+                  {userStats.daily_streak}
+                </Text>
+                <Text
+                  style={[styles.streakDays, { color: colors.textSecondary }]}
+                >
+                  days
+                </Text>
+              </View>
               <Text
-                style={[styles.streakDays, { color: colors.textSecondary }]}
+                style={[styles.streakMessage, { color: colors.textSecondary }]}
               >
-                days
+                {getStreakMessage(userStats.daily_streak)}
               </Text>
             </View>
-            <Text
-              style={[styles.streakMessage, { color: colors.textSecondary }]}
-            >
-              {getStreakMessage(userStats.daily_streak)}
-            </Text>
           </GlassCard>
 
           {/* Activity Summary */}
           <GlassCard style={styles.activityCard}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Activity
-            </Text>
-            <View style={styles.activityRow}>
-              <Text
-                style={[styles.activityLabel, { color: colors.textSecondary }]}
-              >
-                Last Played
+            <View style={styles.activityContent}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Activity
               </Text>
-              <Text style={[styles.activityValue, { color: colors.text }]}>
-                {formatLastPlayed(userStats.last_played)}
-              </Text>
-            </View>
-            <View style={styles.activityRow}>
-              <Text
-                style={[styles.activityLabel, { color: colors.textSecondary }]}
-              >
-                Games This Week
-              </Text>
-              <Text style={[styles.activityValue, { color: colors.text }]}>
-                {userStats.games_this_week || 0}
-              </Text>
+              <View style={styles.activityRow}>
+                <Text
+                  style={[
+                    styles.activityLabel,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  Last Played
+                </Text>
+                <Text style={[styles.activityValue, { color: colors.text }]}>
+                  {formatLastPlayed(userStats.last_played)}
+                </Text>
+              </View>
+              <View style={styles.activityRow}>
+                <Text
+                  style={[
+                    styles.activityLabel,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  Total Games
+                </Text>
+                <Text style={[styles.activityValue, { color: colors.text }]}>
+                  {userStats.total_games}
+                </Text>
+              </View>
             </View>
           </GlassCard>
         </ScrollView>
@@ -253,17 +277,19 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 24,
+    paddingHorizontal: 4,
   },
   backButton: {
     padding: 8,
+    borderRadius: 8,
   },
   backButtonText: {
     fontSize: 16,
@@ -271,9 +297,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontFamily: "Inter_600SemiBold",
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
   },
   placeholder: {
     width: 60,
@@ -281,108 +307,127 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 20,
+  },
   levelCard: {
-    marginBottom: 24,
-    padding: 24,
+    marginBottom: 20,
+  },
+  levelContent: {
+    padding: 28,
     alignItems: "center",
   },
   levelText: {
-    fontSize: 24,
-    fontFamily: "Inter_600SemiBold",
-    marginBottom: 8,
-    letterSpacing: -0.3,
-  },
-  levelDescription: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    textAlign: "center",
-    letterSpacing: 0.3,
-  },
-  statsGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 24,
-    gap: 16,
-  },
-  statCard: {
-    flex: 1,
-    padding: 24,
-    alignItems: "center",
-    minHeight: 100,
-  },
-  statNumber: {
-    fontSize: 32,
+    fontSize: 28,
     fontFamily: "Inter_600SemiBold",
     marginBottom: 8,
     letterSpacing: -0.5,
   },
-  statLabel: {
-    fontSize: 12,
+  levelDescription: {
+    fontSize: 15,
     fontFamily: "Inter_400Regular",
     textAlign: "center",
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
+    lineHeight: 22,
+  },
+  statsGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+  },
+  statContent: {
+    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 120,
+  },
+  statNumber: {
+    fontSize: 36,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 8,
+    letterSpacing: -0.8,
+  },
+  statLabel: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    textAlign: "center",
+    letterSpacing: 0.8,
     textTransform: "uppercase",
+    opacity: 0.8,
   },
   streakCard: {
-    marginBottom: 24,
-    padding: 24,
+    marginBottom: 20,
+  },
+  streakContent: {
+    padding: 28,
     alignItems: "center",
   },
   streakTitle: {
     fontSize: 18,
     fontFamily: "Inter_500Medium",
-    marginBottom: 16,
-    letterSpacing: 0.3,
+    marginBottom: 20,
+    letterSpacing: 0.2,
   },
   streakDisplay: {
     flexDirection: "row",
     alignItems: "baseline",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   streakNumber: {
-    fontSize: 40,
+    fontSize: 48,
     fontFamily: "Inter_600SemiBold",
-    letterSpacing: -0.8,
+    letterSpacing: -1.2,
   },
   streakDays: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: "Inter_400Regular",
     marginLeft: 8,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    opacity: 0.8,
   },
   streakMessage: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "Inter_400Regular",
     textAlign: "center",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    lineHeight: 22,
   },
   activityCard: {
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+  activityContent: {
     padding: 24,
   },
   sectionTitle: {
     fontSize: 18,
     fontFamily: "Inter_500Medium",
-    marginBottom: 16,
-    letterSpacing: 0.3,
+    marginBottom: 20,
+    letterSpacing: 0.2,
   },
   activityRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
   activityLabel: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "Inter_400Regular",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   activityValue: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "Inter_500Medium",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   actionContainer: {
+    paddingTop: 20,
     paddingBottom: 40,
   },
   backHomeButton: {
