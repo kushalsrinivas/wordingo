@@ -26,6 +26,9 @@ export const Colors = {
     border: 'rgba(0, 0, 0, 0.1)',
     overlay: 'rgba(0, 0, 0, 0.02)',
     highlight: '#FFEB3B',
+    success: '#22C55E', // green
+    warning: '#FBBF24', // amber
+    error: '#EF4444',   // red
   },
   dark: {
     text: '#FFFFFF',
@@ -44,5 +47,8 @@ export const Colors = {
     border: 'rgba(255, 255, 255, 0.1)',
     overlay: 'rgba(255, 255, 255, 0.02)',
     highlight: '#FFEB3B',
+    success: '#22C55E',
+    warning: '#FBBF24',
+    error: '#EF4444',
   },
 };

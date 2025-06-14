@@ -4,10 +4,11 @@ import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { gameEngine } from "@/services/gameEngine";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
+  Easing,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -37,6 +38,12 @@ export default function ResultScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
 
+  // Animated values for count-up numbers
+  const animatedCorrect = useRef(new Animated.Value(0)).current;
+  const animatedAccuracy = useRef(new Animated.Value(0)).current;
+  const animatedAvgTime = useRef(new Animated.Value(0)).current;
+  const animatedTotalGames = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     loadSessionSummary();
 
@@ -54,6 +61,68 @@ export default function ResultScreen() {
       }),
     ]).start();
   }, []);
+
+  // Trigger count-up when summary loads
+  useEffect(() => {
+    if (summary) {
+      Animated.timing(animatedCorrect, {
+        toValue: summary.correctAnswers,
+        duration: 600,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false,
+      }).start();
+
+      const accuracy =
+        summary.totalGames > 0
+          ? (summary.correctAnswers / summary.totalGames) * 100
+          : 0;
+
+      Animated.timing(animatedAccuracy, {
+        toValue: accuracy,
+        duration: 600,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false,
+      }).start();
+
+      Animated.timing(animatedAvgTime, {
+        toValue: summary.averageTime / 1000,
+        duration: 600,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false,
+      }).start();
+
+      Animated.timing(animatedTotalGames, {
+        toValue: summary.totalGames,
+        duration: 600,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [summary]);
+
+  // Helper to render animated integer values
+  const AnimatedNumber = ({
+    animatedValue,
+    suffix = "",
+    textStyle,
+  }: {
+    animatedValue: Animated.Value;
+    suffix?: string;
+    textStyle?: any;
+  }) => {
+    const [display, setDisplay] = useState("0");
+
+    useEffect(() => {
+      const id = animatedValue.addListener(({ value }) => {
+        setDisplay(`${Math.round(value)}${suffix}`);
+      });
+      return () => {
+        animatedValue.removeListener(id);
+      };
+    }, [animatedValue]);
+
+    return <Text style={textStyle}>{display}</Text>;
+  };
 
   const loadSessionSummary = async () => {
     try {
@@ -92,11 +161,12 @@ export default function ResultScreen() {
     return "Keep Practicing";
   };
 
-  const getMotivationalMessage = (score: number) => {
-    if (score >= 10) return "Outstanding performance! You're a word master!";
-    if (score >= 5) return "Great job! Keep practicing to improve even more!";
-    if (score >= 1) return "Good effort! Every game makes you stronger!";
-    return "Don't give up! Practice makes perfect!";
+  const getMotivationalMessage = (accuracyPercent: number) => {
+    if (accuracyPercent > 80)
+      return { msg: "Excellent performance!", badge: "🥇" };
+    if (accuracyPercent >= 50)
+      return { msg: "Nice work! You're improving.", badge: "🎯" };
+    return { msg: "Good try! Keep practicing.", badge: "💪" };
   };
 
   if (!summary) {
@@ -112,6 +182,13 @@ export default function ResultScreen() {
       </SafeAreaView>
     );
   }
+
+  const accuracyPercent =
+    summary.totalGames > 0
+      ? (summary.correctAnswers / summary.totalGames) * 100
+      : 0;
+
+  const { msg: feedbackText, badge } = getMotivationalMessage(accuracyPercent);
 
   return (
     <SafeAreaView
@@ -136,81 +213,93 @@ export default function ResultScreen() {
           </Text>
         </View>
 
+        {/* Feedback */}
+        <View style={styles.feedbackContainer}>
+          <Text style={[styles.feedbackText, { color: colors.textSecondary }]}>
+            {" "}
+            {badge} {feedbackText}
+          </Text>
+        </View>
+
         <ScrollView
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          {/* Main Score Card */}
-          <GlassCard style={styles.scoreCard}>
-            <View style={styles.scoreContent}>
-              <Text style={[styles.scoreNumber, { color: colors.text }]}>
-                {summary.correctAnswers}
-              </Text>
-              <Text
-                style={[styles.scoreLabel, { color: colors.textSecondary }]}
-              >
-                Correct Answers
-              </Text>
-              <Text style={[styles.totalGames, { color: colors.textTertiary }]}>
-                out of {summary.totalGames} games
-              </Text>
-              <View style={styles.performanceIndicator}>
-                <Text style={[styles.performanceText, { color: colors.text }]}>
-                  {getPerformanceLevel(
-                    summary.correctAnswers,
-                    summary.totalGames
-                  )}
+          {/* Unified Stats Card */}
+          <GlassCard style={styles.statsCardUnified}>
+            <View style={styles.statsUnifiedContent}>
+              {/* Hero number */}
+              <View style={styles.heroContainer}>
+                <AnimatedNumber
+                  animatedValue={animatedCorrect}
+                  textStyle={[styles.heroNumber, { color: colors.success }]}
+                />
+                <Text
+                  style={[styles.heroLabel, { color: colors.textSecondary }]}
+                >
+                  Correct Answers
                 </Text>
+              </View>
+
+              {/* Small metrics grid */}
+              <View style={styles.metricsRow}>
+                <View style={styles.metricItem}>
+                  <AnimatedNumber
+                    animatedValue={animatedTotalGames}
+                    textStyle={[styles.metricNumber, { color: colors.text }]}
+                  />
+                  <Text
+                    style={[
+                      styles.metricLabel,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Games
+                  </Text>
+                </View>
+                <View style={styles.metricItem}>
+                  <AnimatedNumber
+                    animatedValue={animatedAvgTime}
+                    suffix="s"
+                    textStyle={[styles.metricNumber, { color: colors.text }]}
+                  />
+                  <Text
+                    style={[
+                      styles.metricLabel,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Avg Time
+                  </Text>
+                </View>
+                <View style={styles.metricItem}>
+                  <AnimatedNumber
+                    animatedValue={animatedAccuracy}
+                    suffix="%"
+                    textStyle={[
+                      styles.metricNumber,
+                      {
+                        color:
+                          accuracyPercent >= 70
+                            ? colors.success
+                            : accuracyPercent >= 50
+                            ? colors.warning
+                            : colors.error,
+                      },
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.metricLabel,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Accuracy
+                  </Text>
+                </View>
               </View>
             </View>
           </GlassCard>
-
-          {/* Stats Grid */}
-          <View style={styles.statsGrid}>
-            <View style={styles.statCardContainer}>
-              <GlassCard style={styles.statCard}>
-                <Text style={[styles.statNumber, { color: colors.text }]}>
-                  {summary.totalGames}
-                </Text>
-                <Text
-                  style={[styles.statLabel, { color: colors.textSecondary }]}
-                >
-                  Total Games
-                </Text>
-              </GlassCard>
-            </View>
-
-            <View style={styles.statCardContainer}>
-              <GlassCard style={styles.statCard}>
-                <Text style={[styles.statNumber, { color: colors.text }]}>
-                  {formatTime(summary.averageTime)}
-                </Text>
-                <Text
-                  style={[styles.statLabel, { color: colors.textSecondary }]}
-                >
-                  Avg Time
-                </Text>
-              </GlassCard>
-            </View>
-
-            <View style={styles.statCardContainer}>
-              <GlassCard style={styles.statCard}>
-                <Text style={[styles.statNumber, { color: colors.text }]}>
-                  {summary.totalGames > 0
-                    ? Math.round(
-                        (summary.correctAnswers / summary.totalGames) * 100
-                      )
-                    : 0}
-                  %
-                </Text>
-                <Text
-                  style={[styles.statLabel, { color: colors.textSecondary }]}
-                >
-                  Accuracy
-                </Text>
-              </GlassCard>
-            </View>
-          </View>
 
           {/* Game Breakdown */}
           {summary.gameBreakdown.length > 0 && (
@@ -263,21 +352,29 @@ export default function ResultScreen() {
                           : 0}
                         %
                       </Text>
-                      <View
-                        style={[
-                          styles.scoreIndicator,
-                          {
-                            backgroundColor:
-                              game.played > 0 &&
-                              (game.correct / game.played) * 100 >= 70
-                                ? "rgba(34, 197, 94, 0.2)"
-                                : game.played > 0 &&
-                                  (game.correct / game.played) * 100 >= 50
-                                ? "rgba(251, 191, 36, 0.2)"
-                                : "rgba(239, 68, 68, 0.2)",
-                          },
-                        ]}
-                      />
+                      {/* Progress Bar */}
+                      <View style={styles.progressBarBase}>
+                        <View
+                          style={[
+                            styles.progressBarFill,
+                            {
+                              width: `${
+                                game.played > 0
+                                  ? (game.correct / game.played) * 100
+                                  : 0
+                              }%`,
+                              backgroundColor:
+                                game.played > 0 &&
+                                (game.correct / game.played) * 100 >= 70
+                                  ? colors.success
+                                  : game.played > 0 &&
+                                    (game.correct / game.played) * 100 >= 50
+                                  ? colors.warning
+                                  : colors.error,
+                            },
+                          ]}
+                        />
+                      </View>
                     </View>
                   </View>
                 ))}
@@ -288,7 +385,7 @@ export default function ResultScreen() {
           {/* Motivational Message */}
           <GlassCard style={styles.messageCard}>
             <Text style={[styles.messageText, { color: colors.textSecondary }]}>
-              {getMotivationalMessage(summary.correctAnswers)}
+              {getMotivationalMessage(accuracyPercent).msg}
             </Text>
           </GlassCard>
         </ScrollView>
@@ -298,13 +395,22 @@ export default function ResultScreen() {
           <MinimalButton
             title="Play Again"
             onPress={playAgain}
-            variant="primary"
+            variant="accent"
+            iconName="refresh"
             style={styles.primaryButton}
           />
           <MinimalButton
             title="Go Home"
             onPress={goHome}
             variant="secondary"
+            iconName="home"
+            style={styles.secondaryButton}
+          />
+          <MinimalButton
+            title="View Mistakes"
+            onPress={() => router.push("/mistakes" as any)}
+            variant="secondary"
+            iconName="analytics"
             style={styles.secondaryButton}
           />
         </View>
@@ -475,11 +581,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     marginBottom: 4,
   },
-  scoreIndicator: {
-    width: 32,
-    height: 4,
-    borderRadius: 2,
-  },
   messageCard: {
     marginBottom: 24,
     padding: 28,
@@ -511,5 +612,71 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Inter_400Regular",
     letterSpacing: 0.3,
+  },
+  feedbackContainer: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  feedbackText: {
+    fontSize: 18,
+    fontFamily: "Inter_500Medium",
+    textAlign: "center",
+    letterSpacing: 0.3,
+  },
+  statsCardUnified: {
+    marginBottom: 32,
+    minHeight: 180,
+  },
+  statsUnifiedContent: {
+    alignItems: "center",
+    padding: 36,
+  },
+  heroContainer: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  heroLabel: {
+    fontSize: 18,
+    fontFamily: "Inter_600SemiBold",
+    marginTop: 8,
+    letterSpacing: -0.1,
+  },
+  metricsRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+  },
+  metricItem: {
+    alignItems: "center",
+  },
+  metricLabel: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    textAlign: "center",
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+    opacity: 0.8,
+  },
+  progressBarBase: {
+    width: 120,
+    height: 6,
+    backgroundColor: "rgba(0,0,0,0.1)",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: 3,
+  },
+  heroNumber: {
+    fontSize: 56,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -1.5,
+  },
+  metricNumber: {
+    fontSize: 24,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: -0.5,
+    marginBottom: 4,
   },
 });

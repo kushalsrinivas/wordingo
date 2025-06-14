@@ -1,5 +1,6 @@
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   StyleSheet,
@@ -12,10 +13,12 @@ import {
 interface MinimalButtonProps {
   title: string;
   onPress: () => void;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "accent";
   style?: ViewStyle;
   textStyle?: TextStyle;
   disabled?: boolean;
+  iconName?: React.ComponentProps<typeof Ionicons>["name"];
+  iconPosition?: "left" | "right";
 }
 
 export function MinimalButton({
@@ -25,9 +28,46 @@ export function MinimalButton({
   style,
   textStyle,
   disabled = false,
+  iconName,
+  iconPosition = "left",
 }: MinimalButtonProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
+
+  const renderContent = (textColor: string) => (
+    <>
+      {iconName && iconPosition === "left" && (
+        <Ionicons
+          name={iconName}
+          size={18}
+          color={textColor}
+          style={{ marginRight: 8 }}
+        />
+      )}
+      <Text
+        style={[
+          styles.buttonText,
+          variant === "secondary"
+            ? styles.secondaryButtonText
+            : styles.primaryButtonText,
+          {
+            color: textColor,
+          },
+          textStyle,
+        ]}
+      >
+        {title}
+      </Text>
+      {iconName && iconPosition === "right" && (
+        <Ionicons
+          name={iconName}
+          size={18}
+          color={textColor}
+          style={{ marginLeft: 8 }}
+        />
+      )}
+    </>
+  );
 
   if (variant === "primary") {
     return (
@@ -46,19 +86,29 @@ export function MinimalButton({
         disabled={disabled}
         activeOpacity={0.8}
       >
-        <Text
-          style={[
-            styles.buttonText,
-            styles.primaryButtonText,
-            {
-              color: colors.background,
-              fontFamily: "Inter_500Medium",
-            },
-            textStyle,
-          ]}
-        >
-          {title}
-        </Text>
+        {renderContent(colors.background)}
+      </TouchableOpacity>
+    );
+  }
+
+  if (variant === "accent") {
+    return (
+      <TouchableOpacity
+        style={[
+          styles.button,
+          styles.primaryButton,
+          {
+            backgroundColor: colors.highlight,
+            borderColor: colors.highlight,
+          },
+          disabled && styles.disabled,
+          style,
+        ]}
+        onPress={onPress}
+        disabled={disabled}
+        activeOpacity={0.8}
+      >
+        {renderContent(colors.background)}
       </TouchableOpacity>
     );
   }
@@ -79,19 +129,7 @@ export function MinimalButton({
       disabled={disabled}
       activeOpacity={0.8}
     >
-      <Text
-        style={[
-          styles.buttonText,
-          styles.secondaryButtonText,
-          {
-            color: colors.text,
-            fontFamily: "Inter_400Regular",
-          },
-          textStyle,
-        ]}
-      >
-        {title}
-      </Text>
+      {renderContent(colors.text)}
     </TouchableOpacity>
   );
 }
@@ -103,8 +141,9 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     alignItems: "center",
-    justifyContent: "center",
     minHeight: 56,
+    flexDirection: "row",
+    justifyContent: "center",
   },
   primaryButton: {
     // Primary button specific styles
