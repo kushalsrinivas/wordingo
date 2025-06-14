@@ -289,9 +289,6 @@ export default function GameScreen() {
               {getGameTypeTitle(game.type)}
             </Text>
           </View>
-          <Text style={[styles.instruction, { color: colors.textSecondary }]}>
-            {getGameInstruction(game.type)}
-          </Text>
         </View>
 
         <View style={styles.questionContainer}>
@@ -431,15 +428,7 @@ export default function GameScreen() {
                   },
                 ])}
               >
-                <Text
-                  style={[
-                    styles.optionText,
-                    { color: colors.text },
-                    ...(isSelected && !answerResult
-                      ? [{ fontFamily: "Inter_600SemiBold" as const }]
-                      : []),
-                  ]}
-                >
+                <Text style={[styles.optionText, { color: colors.text }]}>
                   {option}
                   {isCorrectOption && " ✓"}
                   {isIncorrectSelected && " ✗"}
@@ -821,6 +810,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   optionsContainer: {
+    marginTop: 20,
     width: "100%",
     gap: 16,
   },
