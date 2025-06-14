@@ -14,7 +14,7 @@ interface GlassCardProps {
 export function GlassCard({
   children,
   style,
-  intensity = 1,
+  intensity = 10,
   borderRadius = 16,
 }: GlassCardProps) {
   const colorScheme = useColorScheme();
@@ -27,6 +27,8 @@ export function GlassCard({
         style={[
           styles.blurView,
           {
+            width: "100%",
+
             borderRadius,
             borderColor: colors.glassBorder,
           },
@@ -61,6 +63,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   content: {
+    padding: 9,
+    height: "100%",
+    width: "100%",
     flex: 1,
     backgroundColor: "rgba(255, 255, 255, 0.1)",
   },

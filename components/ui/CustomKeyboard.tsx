@@ -121,14 +121,14 @@ export function CustomKeyboard({ onKeyPress, onDelete }: CustomKeyboardProps) {
         activeOpacity={0.7}
         style={[styles.keyContainer, { width: deleteKeyWidth * 1.5 }]}
       >
-        <GlassCard
+        <View
           style={StyleSheet.flatten([
             deleteKeyStyle,
             isPressed && pressedStyle,
           ])}
         >
           <Text style={[styles.deleteKeyText, { color: colors.text }]}>⌫</Text>
-        </GlassCard>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   keyText: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: "Inter_500Medium",
     letterSpacing: 0.5,
     fontWeight: "500",
