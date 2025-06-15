@@ -29,10 +29,16 @@ interface SessionSummary {
     correct: number;
     averageTime: number;
   }[];
+  score?: number;
+  streak?: number;
 }
 
 export default function ResultScreen() {
   const [summary, setSummary] = useState<SessionSummary | null>(null);
+  const [sessionInfo, setSessionInfo] = useState<{
+    score: number;
+    streak: number;
+  } | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(30));
   const colorScheme = useColorScheme();
@@ -66,7 +72,7 @@ export default function ResultScreen() {
   useEffect(() => {
     if (summary) {
       Animated.timing(animatedCorrect, {
-        toValue: summary.correctAnswers,
+        toValue: sessionInfo ? sessionInfo.score : 0,
         duration: 600,
         easing: Easing.out(Easing.ease),
         useNativeDriver: false,
@@ -98,7 +104,7 @@ export default function ResultScreen() {
         useNativeDriver: false,
       }).start();
     }
-  }, [summary]);
+  }, [summary, sessionInfo]);
 
   // Helper to render animated integer values
   const AnimatedNumber = ({
@@ -132,6 +138,7 @@ export default function ResultScreen() {
           session.sessionId
         );
         setSummary(sessionSummary);
+        setSessionInfo({ score: session.score, streak: session.currentStreak });
       }
     } catch (error) {
       console.error("Failed to load session summary:", error);
@@ -230,15 +237,22 @@ export default function ResultScreen() {
             <View style={styles.statsUnifiedContent}>
               {/* Hero number */}
               <View style={styles.heroContainer}>
-                <AnimatedNumber
-                  animatedValue={animatedCorrect}
-                  textStyle={[styles.heroNumber, { color: colors.success }]}
-                />
-                <Text
-                  style={[styles.heroLabel, { color: colors.textSecondary }]}
-                >
-                  Correct Answers
-                </Text>
+                {sessionInfo && (
+                  <>
+                    <AnimatedNumber
+                      animatedValue={animatedCorrect}
+                      textStyle={[styles.heroNumber, { color: colors.success }]}
+                    />
+                    <Text
+                      style={[
+                        styles.heroLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Total Score
+                    </Text>
+                  </>
+                )}
               </View>
 
               {/* Small metrics grid */}
@@ -254,9 +268,24 @@ export default function ResultScreen() {
                       { color: colors.textSecondary },
                     ]}
                   >
-                    Games
+                    Rounds
                   </Text>
                 </View>
+                {sessionInfo && (
+                  <View style={styles.metricItem}>
+                    <Text style={[styles.metricNumber, { color: colors.text }]}>
+                      {sessionInfo.streak}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.metricLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Streak
+                    </Text>
+                  </View>
+                )}
                 <View style={styles.metricItem}>
                   <AnimatedNumber
                     animatedValue={animatedAvgTime}

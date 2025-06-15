@@ -155,29 +155,6 @@ export default function HomeScreen() {
           </View>
 
           {/* Debug Menu (only visible in development) */}
-          {__DEV__ && (
-            <View style={styles.debugSection}>
-              <Text style={[styles.debugTitle, { color: colors.text }]}>
-                Debug Games
-              </Text>
-              {[
-                { label: "Anagram", type: "anagram" },
-                { label: "Association", type: "association" },
-                { label: "Wordle", type: "wordle" },
-                { label: "Spelling", type: "spelling" },
-                { label: "Synonym", type: "synonym" },
-                { label: "Odd One Out", type: "odd_one_out" },
-              ].map((g) => (
-                <MinimalButton
-                  key={g.type}
-                  title={g.label}
-                  onPress={() => router.push(`/game?type=${g.type}`)}
-                  variant="primary"
-                  style={styles.debugButton}
-                />
-              ))}
-            </View>
-          )}
 
           {/* Footer */}
           <View style={styles.footer}>

@@ -1,12 +1,8 @@
-import { CustomKeyboard } from "@/components/ui/CustomKeyboard";
-import { GlassCard } from "@/components/ui/GlassCard";
-import { MinimalButton } from "@/components/ui/MinimalButton";
-import { WordleGame } from "@/components/ui/WordleGame";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { CurrentGame, gameEngine, GameSession } from "@/services/gameEngine";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -15,17 +11,15 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
+import { WordleGame } from "../components/ui/WordleGame";
 
 const { width, height } = Dimensions.get("window");
 
 export default function GameScreen() {
   const [session, setSession] = useState<GameSession | null>(null);
   const [currentGame, setCurrentGame] = useState<CurrentGame | null>(null);
-  const [userAnswer, setUserAnswer] = useState("");
-  const [selectedOption, setSelectedOption] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timer, setTimer] = useState(0);
@@ -38,9 +32,6 @@ export default function GameScreen() {
   const [slideAnim] = useState(new Animated.Value(0));
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
-
-  // Read URL param (?type=gameType) to force a single game for debugging
-  const { type: forcedGameType } = useLocalSearchParams<{ type?: string }>();
 
   useEffect(() => {
     initializeGame();
@@ -88,9 +79,7 @@ export default function GameScreen() {
       // Ensure database is ready
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const newSession = await gameEngine.startNewSession(
-        forcedGameType as string | undefined
-      );
+      const newSession = await gameEngine.startNewSession();
       console.log("New session created:", newSession);
 
       setSession(newSession);
@@ -127,11 +116,6 @@ export default function GameScreen() {
       }
 
       setCurrentGame(nextGame);
-      setUserAnswer("");
-      setSelectedOption("");
-
-      // Reset answer result for next question
-      setAnswerResult(null);
 
       // Animate in new game with slide effect
       slideAnim.setValue(-width);
@@ -159,63 +143,35 @@ export default function GameScreen() {
     }
   };
 
-  const submitAnswer = async () => {
-    if (!currentGame) {
-      console.log("No current game available");
-      return;
-    }
-
-    if (isSubmitting || answerResult) {
-      console.log(
-        "Already submitting or feedback showing, ignoring duplicate submission"
-      );
-      return;
-    }
-
-    const answer =
-      currentGame.game.type === "anagram" ||
-      currentGame.game.type === "spelling"
-        ? userAnswer
-        : selectedOption;
-
-    if (!answer.trim()) {
-      Alert.alert("Please provide an answer");
-      return;
-    }
+  const handleWordleFinish = async (
+    finalGuess: string,
+    isCorrect: boolean,
+    guessesUsed: number
+  ) => {
+    if (!currentGame) return;
+    if (isSubmitting || answerResult) return;
 
     try {
       setIsSubmitting(true);
-      console.log("Submitting answer:", answer);
-      const result = await gameEngine.submitAnswer(answer);
-      console.log("Answer result:", result);
 
-      // Show feedback first
+      // Submit the final guess to the game engine so session stats stay consistent
+      const result = await gameEngine.submitAnswer(finalGuess);
+
       setAnswerResult({
         isCorrect: result.isCorrect,
         correctAnswer: result.correctAnswer,
       });
 
-      // Delay to allow user to see feedback
+      // Small delay to let the user see feedback inside grid first
       setTimeout(() => {
         if (result.isCorrect) {
-          console.log("Correct answer, loading next game");
-          Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }).start(() => {
-            loadNextGame();
-          });
+          loadNextGame();
         } else {
-          console.log("Wrong answer, going to result screen");
           router.replace("/result");
         }
       }, 1500);
     } catch (error) {
-      console.error("Failed to submit answer:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      Alert.alert("Error", `Failed to submit answer: ${errorMessage}`);
+      console.error("Failed to submit Wordle result", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -275,231 +231,37 @@ export default function GameScreen() {
   const renderGameContent = () => {
     if (!currentGame) return null;
 
-    const { game, question } = currentGame;
-
     return (
       <Animated.View
         style={[
           styles.gameContent,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateX: slideAnim }],
-          },
+          { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
         ]}
       >
+        {/* Difficulty Badge & Optional Jumble Clue */}
         <View style={styles.gameHeader}>
-          <View style={styles.gameTypeContainer}>
-            <Text style={styles.gameEmoji}>{getGameEmoji(game.type)}</Text>
-            <Text style={[styles.gameTitle, { color: colors.text }]}>
-              {getGameTypeTitle(game.type)}
+          <Text style={[styles.gameTitle, { color: colors.text }]}>
+            {" "}
+            Round {session?.currentRound} –{" "}
+            {currentGame.difficulty.toUpperCase()}{" "}
+          </Text>
+          {currentGame.jumbleClue && (
+            <Text style={[styles.instruction, { color: colors.textSecondary }]}>
+              {" "}
+              {currentGame.jumbleClue}{" "}
             </Text>
-          </View>
-        </View>
-
-        <View style={styles.questionContainer}>
-          <LinearGradient
-            colors={[
-              colorScheme === "dark"
-                ? "rgba(255, 255, 255, 0.05)"
-                : "rgba(0, 0, 0, 0.02)",
-              colorScheme === "dark"
-                ? "rgba(255, 255, 255, 0.02)"
-                : "rgba(0, 0, 0, 0.01)",
-            ]}
-            style={styles.questionGradient}
-          >
-            <GlassCard style={styles.questionCard}>
-              <Text style={[styles.questionText, { color: colors.text }]}>
-                {question.question}
-              </Text>
-            </GlassCard>
-          </LinearGradient>
-        </View>
-
-        <View style={styles.answerContainer}>
-          {game.type === "anagram" || game.type === "spelling" ? (
-            <View style={styles.textInputContainer}>
-              <LinearGradient
-                colors={[
-                  colorScheme === "dark"
-                    ? "rgba(255, 255, 255, 0.03)"
-                    : "rgba(0, 0, 0, 0.01)",
-                  colorScheme === "dark"
-                    ? "rgba(255, 255, 255, 0.01)"
-                    : "rgba(0, 0, 0, 0.005)",
-                ]}
-                style={styles.answerGradient}
-              >
-                <GlassCard style={styles.answerDisplay}>
-                  <Text style={[styles.answerText, { color: colors.text }]}>
-                    {userAnswer || ""}
-                  </Text>
-                  {!userAnswer && (
-                    <Text
-                      style={[
-                        styles.placeholderText,
-                        { color: colors.textTertiary },
-                      ]}
-                    >
-                      Enter your answer
-                    </Text>
-                  )}
-                </GlassCard>
-              </LinearGradient>
-            </View>
-          ) : game.type === "wordle" ? (
-            <WordleGame
-              secretWord={question.answer}
-              onFinish={handleWordleFinish}
-            />
-          ) : (
-            renderMultipleChoice()
           )}
         </View>
+
+        <WordleGame
+          key={currentGame.secretWord}
+          secretWord={currentGame.secretWord}
+          maxGuesses={currentGame.maxGuesses}
+          jumbleClue={undefined}
+          onFinish={handleWordleFinish}
+        />
       </Animated.View>
     );
-  };
-
-  const renderMultipleChoice = () => {
-    if (!currentGame?.question.options) return null;
-
-    const options = JSON.parse(currentGame.question.options);
-
-    return (
-      <View style={styles.optionsContainer}>
-        {options.map((option: string, index: number) => {
-          const isSelected = selectedOption === option;
-          const isCorrectOption =
-            answerResult &&
-            option.toLowerCase() === answerResult.correctAnswer.toLowerCase();
-          const isIncorrectSelected =
-            answerResult && !answerResult.isCorrect && isSelected;
-
-          return (
-            <TouchableOpacity
-              key={index}
-              style={styles.optionContainer}
-              onPress={() => {
-                if (!answerResult) {
-                  setSelectedOption(option);
-                }
-              }}
-              activeOpacity={0.7}
-              disabled={!!answerResult}
-            >
-              <LinearGradient
-                colors={
-                  isCorrectOption
-                    ? ["rgba(34, 197, 94, 0.15)", "rgba(34, 197, 94, 0.05)"]
-                    : isIncorrectSelected
-                    ? ["rgba(239, 68, 68, 0.15)", "rgba(239, 68, 68, 0.05)"]
-                    : isSelected && !answerResult
-                    ? [colors.highlight + "40", colors.highlight + "20"]
-                    : [
-                        colorScheme === "dark"
-                          ? "rgba(255, 255, 255, 0.03)"
-                          : "rgba(0, 0, 0, 0.01)",
-                        colorScheme === "dark"
-                          ? "rgba(255, 255, 255, 0.01)"
-                          : "rgba(0, 0, 0, 0.005)",
-                      ]
-                }
-                style={StyleSheet.flatten([
-                  styles.optionCard,
-                  isSelected &&
-                    !answerResult && {
-                      borderWidth: 2,
-                      borderColor: colors.highlight + "60",
-                      shadowColor: colors.highlight,
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 8,
-                    },
-                  isCorrectOption && {
-                    borderWidth: 2,
-                    borderColor: "#22c55e",
-                    shadowColor: "#22c55e",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 8,
-                  },
-                  isIncorrectSelected && {
-                    borderWidth: 2,
-                    borderColor: "#ef4444",
-                    shadowColor: "#ef4444",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 8,
-                  },
-                ])}
-              >
-                <Text style={[styles.optionText, { color: colors.text }]}>
-                  {option}
-                  {isCorrectOption && " ✓"}
-                  {isIncorrectSelected && " ✗"}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    );
-  };
-
-  const handleKeyPress = (key: string) => {
-    setUserAnswer((prev) => prev + key.toLowerCase());
-  };
-
-  const handleDelete = () => {
-    setUserAnswer((prev) => prev.slice(0, -1));
-  };
-
-  const isTextBasedGame = (gameType: string) => {
-    return gameType === "anagram" || gameType === "spelling";
-  };
-
-  const canSubmit = () => {
-    if (!currentGame) return false;
-    if (isTextBasedGame(currentGame.game.type)) {
-      return userAnswer.trim().length > 0;
-    }
-    return selectedOption.trim().length > 0;
-  };
-
-  const handleWordleFinish = async (
-    finalGuess: string,
-    _isCorrect: boolean
-  ) => {
-    if (!currentGame) return;
-    if (isSubmitting || answerResult) return;
-
-    try {
-      setIsSubmitting(true);
-
-      // Submit the final guess to the game engine so session stats stay consistent
-      const result = await gameEngine.submitAnswer(finalGuess);
-
-      setAnswerResult({
-        isCorrect: result.isCorrect,
-        correctAnswer: result.correctAnswer,
-      });
-
-      // Small delay to let the user see feedback inside grid first
-      setTimeout(() => {
-        if (result.isCorrect) {
-          loadNextGame();
-        } else {
-          router.replace("/result");
-        }
-      }, 1500);
-    } catch (error) {
-      console.error("Failed to submit Wordle result", error);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   if (isLoading) {
@@ -575,8 +337,7 @@ export default function GameScreen() {
               <Text
                 style={[styles.progressText, { color: colors.textSecondary }]}
               >
-                Question {session.gamesPlayedInRound.length + 1} of{" "}
-                {session.availableGames.length}
+                Score: {session.score}
               </Text>
             )}
             <View style={styles.streakContainer}>
@@ -610,66 +371,7 @@ export default function GameScreen() {
         {/* Game Content */}
         <View style={styles.gameContainer}>{renderGameContent()}</View>
 
-        {/* Custom Keyboard - Only show for eligible game types */}
-        {currentGame && isTextBasedGame(currentGame.game.type) && (
-          <CustomKeyboard onKeyPress={handleKeyPress} onDelete={handleDelete} />
-        )}
-
-        {/* Submit Button or Feedback */}
-        <View style={styles.submitContainer}>
-          {!answerResult ? (
-            currentGame && currentGame.game.type !== "wordle" ? (
-              <LinearGradient
-                colors={
-                  canSubmit() && !isSubmitting
-                    ? [colors.highlight, colors.highlight + "CC"]
-                    : ["rgba(128, 128, 128, 0.3)", "rgba(128, 128, 128, 0.2)"]
-                }
-                style={styles.submitGradient}
-              >
-                <MinimalButton
-                  title={isSubmitting ? "Submitting..." : "Submit Answer"}
-                  onPress={submitAnswer}
-                  variant="primary"
-                  disabled={isSubmitting || !canSubmit()}
-                  style={styles.submitButton}
-                />
-              </LinearGradient>
-            ) : null
-          ) : (
-            <View style={styles.feedbackContainer}>
-              <LinearGradient
-                colors={
-                  answerResult.isCorrect
-                    ? ["rgba(34, 197, 94, 0.2)", "rgba(34, 197, 94, 0.1)"]
-                    : ["rgba(239, 68, 68, 0.2)", "rgba(239, 68, 68, 0.1)"]
-                }
-                style={styles.feedbackGradient}
-              >
-                <Text
-                  style={[
-                    styles.feedbackText,
-                    {
-                      color: answerResult.isCorrect ? "#22c55e" : "#ef4444",
-                    },
-                  ]}
-                >
-                  {answerResult.isCorrect ? "🎉 Correct!" : "💔 Wrong!"}
-                </Text>
-                {!answerResult.isCorrect && (
-                  <Text
-                    style={[
-                      styles.correctAnswerText,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    Correct answer: {answerResult.correctAnswer}
-                  </Text>
-                )}
-              </LinearGradient>
-            </View>
-          )}
-        </View>
+        {/* Feedback Banner */}
       </LinearGradient>
     </SafeAreaView>
   );
@@ -794,18 +496,8 @@ const styles = StyleSheet.create({
   questionContainer: {
     flex: 1,
     justifyContent: "center",
-    marginBottom: 40,
-  },
-  questionGradient: {
-    borderRadius: 24,
-    padding: 2,
-  },
-  questionCard: {
-    width: "100%",
-    minHeight: 160,
-    justifyContent: "center",
     alignItems: "center",
-    borderRadius: 22,
+    marginBottom: 40,
   },
   questionText: {
     fontSize: 24,
@@ -818,6 +510,7 @@ const styles = StyleSheet.create({
   answerContainer: {
     width: "100%",
     marginBottom: 20,
+    alignItems: "center",
   },
   textInputContainer: {
     width: "100%",

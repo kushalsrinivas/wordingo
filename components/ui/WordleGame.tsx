@@ -1,23 +1,35 @@
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Animated, StyleSheet, Text, View } from "react-native";
 import { CustomKeyboard } from "./CustomKeyboard";
 import { MinimalButton } from "./MinimalButton";
 
 interface WordleGameProps {
   secretWord: string;
-  onFinish: (finalGuess: string, isCorrect: boolean) => void;
+  onFinish: (
+    finalGuess: string,
+    isCorrect: boolean,
+    guessesUsed: number
+  ) => void;
+  maxGuesses?: number;
+  jumbleClue?: string;
 }
 
 export const WordleGame: React.FC<WordleGameProps> = ({
   secretWord,
   onFinish,
+  maxGuesses = 6,
+  jumbleClue,
 }) => {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
   const [guesses, setGuesses] = useState<string[]>([]);
   const [currentInput, setCurrentInput] = useState<string>("");
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [fadeAnim] = useState(new Animated.Value(0));
 
   // Evaluate a guess against the secret word and return status per letter
   const evaluateGuess = (
@@ -47,14 +59,32 @@ export const WordleGame: React.FC<WordleGameProps> = ({
     const newGuesses = [...guesses, currentInput.toUpperCase()];
     setGuesses(newGuesses);
 
-    const isCorrect = currentInput.toLowerCase() === secretWord.toLowerCase();
+    const isGuessCorrect =
+      currentInput.toLowerCase() === secretWord.toLowerCase();
+    setIsCorrect(isGuessCorrect);
+
+    if (isGuessCorrect) {
+      setFeedbackMessage("🎉 Correct!");
+    } else if (newGuesses.length === maxGuesses) {
+      setFeedbackMessage(`💔 The word was: ${secretWord.toUpperCase()}`);
+    }
+
+    // Animate feedback
+    if (isGuessCorrect || newGuesses.length === maxGuesses) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+
+      // Notify parent after slight delay so last row renders first
+      setTimeout(
+        () => onFinish(currentInput, isGuessCorrect, newGuesses.length),
+        1500
+      );
+    }
 
     setCurrentInput("");
-
-    if (isCorrect || newGuesses.length === 6) {
-      // Notify parent after slight delay so last row renders first
-      setTimeout(() => onFinish(currentInput, isCorrect), 300);
-    }
   };
 
   const handleKeyPress = (key: string) => {
@@ -90,7 +120,7 @@ export const WordleGame: React.FC<WordleGameProps> = ({
     );
   };
 
-  const rows = Array.from({ length: 6 }).map((_, rowIdx) => {
+  const rows = Array.from({ length: maxGuesses }).map((_, rowIdx) => {
     // Determine what to render for each row
     if (rowIdx < guesses.length) {
       // Past guess, show colors
@@ -129,17 +159,60 @@ export const WordleGame: React.FC<WordleGameProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* Jumble Clue */}
+      {jumbleClue && (
+        <Text style={[styles.jumbleText, { color: colors.textSecondary }]}>
+          {jumbleClue}
+        </Text>
+      )}
       <View style={styles.grid}>{rows}</View>
 
-      {/* Keyboard & Submit */}
+      {/* Keyboard */}
       <CustomKeyboard onKeyPress={handleKeyPress} onDelete={handleDelete} />
-      <MinimalButton
-        title="Submit Guess"
-        onPress={handleSubmit}
-        variant="primary"
-        disabled={currentInput.length !== 5}
-        style={styles.submitButton}
-      />
+
+      {/* Combined Submit/Feedback Component */}
+      <View style={styles.actionContainer}>
+        {feedbackMessage ? (
+          <Animated.View
+            style={[styles.feedbackContainer, { opacity: fadeAnim }]}
+          >
+            <LinearGradient
+              colors={
+                isCorrect
+                  ? ["rgba(34, 197, 94, 0.25)", "rgba(34, 197, 94, 0.15)"]
+                  : ["rgba(239, 68, 68, 0.25)", "rgba(239, 68, 68, 0.15)"]
+              }
+              style={styles.feedbackGradient}
+            >
+              <Text
+                style={[
+                  styles.feedbackText,
+                  { color: isCorrect ? "#22c55e" : "#ef4444" },
+                ]}
+              >
+                {feedbackMessage}
+              </Text>
+            </LinearGradient>
+          </Animated.View>
+        ) : (
+          <LinearGradient
+            colors={
+              currentInput.length === 5
+                ? [colors.highlight, colors.highlight + "CC"]
+                : ["rgba(128, 128, 128, 0.3)", "rgba(128, 128, 128, 0.2)"]
+            }
+            style={styles.submitGradient}
+          >
+            <MinimalButton
+              title="Submit Guess"
+              onPress={handleSubmit}
+              variant="primary"
+              disabled={currentInput.length !== 5}
+              style={styles.submitButton}
+            />
+          </LinearGradient>
+        )}
+      </View>
     </View>
   );
 };
@@ -147,6 +220,7 @@ export const WordleGame: React.FC<WordleGameProps> = ({
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
+    width: "100%",
   },
   grid: {
     gap: 8,
@@ -168,8 +242,39 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: "Inter_700Bold",
   },
+  actionContainer: {
+    width: "100%",
+    marginTop: 16,
+    alignItems: "center",
+  },
   submitButton: {
-    marginTop: 12,
+    width: "100%",
+  },
+  submitGradient: {
     width: "90%",
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  feedbackContainer: {
+    width: "90%",
+  },
+  feedbackGradient: {
+    borderRadius: 20,
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 60,
+  },
+  feedbackText: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    textAlign: "center",
+    letterSpacing: 0.3,
+  },
+  jumbleText: {
+    fontSize: 18,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.4,
+    marginVertical: 4,
   },
 });

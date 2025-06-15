@@ -1,24 +1,27 @@
-import { databaseService, Game, WordBankItem } from './database';
+import { databaseService } from './database';
 
 export interface GameSession {
   sessionId: number;
   currentRound: number;
+  currentDifficulty: DifficultyMode;
   currentStreak: number;
-  gamesPlayedInRound: string[];
-  availableGames: Game[];
+  score: number;
+  history: RoundLog[];
   startTime: number;
   isActive: boolean;
 }
 
 export interface CurrentGame {
-  game: Game;
-  question: WordBankItem;
+  secretWord: string;
+  difficulty: DifficultyMode;
+  jumbleClue?: string;
+  maxGuesses: number;
   startTime: number;
 }
 
 // -------------------------------
 // Static list of 5-letter words for Wordle rounds.
-// You can expand this as needed – it just has to contain valid 5-letter English words.
+// Feel free to expand – must be valid English words.
 const WORDLE_WORDS = [
   'apple',
   'crane',
@@ -36,38 +39,60 @@ const WORDLE_WORDS = [
   'glass',
   'cloud',
 ];
-// -------------------------------
+
+type DifficultyMode = 'jumble' | 'standard' | 'sudden';
+
+interface RoundLog {
+  word: string;
+  difficulty: DifficultyMode;
+  won: boolean;
+  guessesUsed: number;
+  points: number;
+}
 
 class GameEngine {
   private currentSession: GameSession | null = null;
   private currentGame: CurrentGame | null = null;
+  private wordleGameId: number | null = null;
 
-  async startNewSession(forcedGameType?: string): Promise<GameSession> {
-    const sessionId = await databaseService.createSession();
-    let availableGames = await databaseService.getGamesByType();
+  private readonly difficulties: DifficultyMode[] = ['jumble', 'standard', 'sudden'];
 
-    if (forcedGameType) {
-      availableGames = availableGames.filter(
-        (g) => g.type === forcedGameType
-      );
+  private pickNextDifficulty(prev?: DifficultyMode): DifficultyMode {
+    let next: DifficultyMode;
+    do {
+      next = this.difficulties[Math.floor(Math.random() * this.difficulties.length)];
+    } while (next === prev);
+    return next;
+  }
 
-      if (availableGames.length === 0) {
-        throw new Error(`Game type '${forcedGameType}' not found in database`);
+  private shuffleWord(word: string): string {
+    const arr = word.split('');
+    // Fisher-Yates shuffle – repeat until not identical to original
+    let shuffled = word;
+    while (shuffled === word) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
       }
+      shuffled = arr.join('');
     }
-    
-    console.log('Available games:', availableGames);
-    
-    if (availableGames.length === 0) {
-      throw new Error('No games available in database');
-    }
+    return shuffled.toUpperCase();
+  }
+
+  async startNewSession(): Promise<GameSession> {
+    const sessionId = await databaseService.createSession();
+    const games = await databaseService.getGamesByType();
+    const wordleGame = games.find((g) => g.type === 'wordle');
+    if (!wordleGame) throw new Error('Wordle game type not found in DB');
+    this.wordleGameId = wordleGame.id;
     
     this.currentSession = {
       sessionId,
       currentRound: 1,
+      currentDifficulty: 'jumble',
       currentStreak: 0,
-      gamesPlayedInRound: [],
-      availableGames,
+      score: 0,
+      history: [],
       startTime: Date.now(),
       isActive: true
     };
@@ -84,130 +109,63 @@ class GameEngine {
       return null;
     }
 
-    console.log('Current session:', this.currentSession);
+    // Pick next difficulty randomly (no repeat)
+    const nextDifficulty = this.pickNextDifficulty(this.currentSession.currentDifficulty);
+    this.currentSession.currentDifficulty = nextDifficulty;
 
-    // Check if all games in current round have been played
-    if (this.currentSession.gamesPlayedInRound.length >= this.currentSession.availableGames.length) {
-      // Start new round
-      this.currentSession.currentRound++;
-      this.currentSession.gamesPlayedInRound = [];
-      
-      await databaseService.updateSession(this.currentSession.sessionId, {
-        round: this.currentSession.currentRound
-      });
-    }
+    // Prepare round params
+    const secretWord = WORDLE_WORDS[Math.floor(Math.random() * WORDLE_WORDS.length)];
+    const maxGuesses = nextDifficulty === 'sudden' ? 3 : 6;
+    const jumbleClue = nextDifficulty === 'jumble' ? this.shuffleWord(secretWord) : undefined;
 
-    // Get available games for this round (not yet played)
-    const availableGameTypes = this.currentSession.availableGames.filter(
-      game => !this.currentSession!.gamesPlayedInRound.includes(game.type)
-    );
-
-    console.log('Available game types for this round:', availableGameTypes);
-    console.log('Games played in round:', this.currentSession.gamesPlayedInRound);
-
-    if (availableGameTypes.length === 0) {
-      console.log('No available game types');
-      return null;
-    }
-
-    // Randomly select a game type
-    const randomIndex = Math.floor(Math.random() * availableGameTypes.length);
-    const selectedGame = availableGameTypes[randomIndex];
-
-    console.log('Selected game:', selectedGame);
-
-    // Get difficulty based on current round
-    const difficulty = Math.min(this.currentSession.currentRound, 3); // Cap at difficulty 3
-
-    console.log('Difficulty level:', difficulty);
-
-    // Special handling for Wordle – we generate a random 5-letter word from our list instead of pulling from DB
-    if (selectedGame.type === 'wordle') {
-      const randomWord = WORDLE_WORDS[Math.floor(Math.random() * WORDLE_WORDS.length)];
-
-      this.currentGame = {
-        game: selectedGame,
-        question: {
-          id: -1,
-          game_type: 'wordle',
-          question: 'Guess the 5-letter word',
-          answer: randomWord,
-          difficulty,
-        } as any,
-        startTime: Date.now(),
-      };
-
-      // Mark this game type as played in current round
-      this.currentSession.gamesPlayedInRound.push(selectedGame.type);
-
-      console.log('Generated Wordle word:', randomWord);
-      return this.currentGame;
-    }
-
-    // For all other game types, pull a question from the database as before
-    const questions = await databaseService.getWordBankByType(selectedGame.type, difficulty);
-    
-    console.log(`Questions for ${selectedGame.type} at difficulty ${difficulty}:`, questions.length);
-    
-    if (questions.length === 0) {
-      // Fallback to difficulty 1 if no questions found for current difficulty
-      const fallbackQuestions = await databaseService.getWordBankByType(selectedGame.type, 1);
-      console.log(`Fallback questions for ${selectedGame.type} at difficulty 1:`, fallbackQuestions.length);
-      
-      if (fallbackQuestions.length === 0) {
-        console.log('No questions found even at difficulty 1');
-        return null;
-      }
-      const randomQuestion = fallbackQuestions[Math.floor(Math.random() * fallbackQuestions.length)];
-      this.currentGame = {
-        game: selectedGame,
-        question: randomQuestion,
-        startTime: Date.now()
-      };
-    } else {
-      const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-      this.currentGame = {
-        game: selectedGame,
-        question: randomQuestion,
-        startTime: Date.now()
-      };
-    }
-
-    // Mark this game type as played in current round
-    this.currentSession.gamesPlayedInRound.push(selectedGame.type);
-
-    console.log('Selected question:', this.currentGame.question);
+    this.currentGame = {
+      secretWord,
+      difficulty: nextDifficulty,
+      jumbleClue,
+      maxGuesses,
+      startTime: Date.now(),
+    };
 
     return this.currentGame;
   }
 
-  async submitAnswer(answer: string): Promise<{ isCorrect: boolean; correctAnswer: string; timeTaken: number }> {
+  async submitAnswer(answer: string): Promise<{ isCorrect: boolean; correctAnswer: string; timeTaken: number; points: number }> {
     if (!this.currentSession || !this.currentGame) {
       throw new Error('No active game session');
     }
 
     const timeTaken = Date.now() - this.currentGame.startTime;
     const normalizedAnswer = answer.toLowerCase().trim();
-    const correctAnswer = this.currentGame.question.answer.toLowerCase().trim();
+    const correctAnswer = this.currentGame.secretWord.toLowerCase().trim();
     const isCorrect = normalizedAnswer === correctAnswer;
 
-    // Store the correct answer before potentially clearing currentGame
-    const correctAnswerToReturn = this.currentGame.question.answer;
+    // Determine points
+    let basePoints = 0;
+    if (this.currentGame.difficulty === 'jumble') basePoints = 75;
+    else if (this.currentGame.difficulty === 'standard') basePoints = 100;
+    else basePoints = 150;
+
+    // guessesUsed will be passed separately by UI, but for DB we set 0.
+
+    const pointsAwarded = isCorrect ? basePoints : 0;
 
     // Save game result
-    await databaseService.saveGameResult(
-      this.currentSession.sessionId,
-      this.currentGame.game.id,
-      isCorrect,
-      timeTaken
-    );
+    if (this.wordleGameId) {
+      await databaseService.saveGameResult(
+        this.currentSession.sessionId,
+        this.wordleGameId,
+        isCorrect,
+        timeTaken
+      );
+    }
 
     if (isCorrect) {
       // Update streak
       this.currentSession.currentStreak++;
+      this.currentSession.score += pointsAwarded;
       await databaseService.updateSession(this.currentSession.sessionId, {
         streak: this.currentSession.currentStreak,
-        score: this.currentSession.currentStreak
+        score: this.currentSession.score
       });
       
       // Clear current game to prepare for next one
@@ -237,8 +195,9 @@ class GameEngine {
 
     return {
       isCorrect,
-      correctAnswer: correctAnswerToReturn,
-      timeTaken
+      correctAnswer,
+      timeTaken,
+      points: pointsAwarded
     };
   }
 
