@@ -115,6 +115,9 @@ export default function GameScreen() {
         return;
       }
 
+      // Clear previous round result so onFinish can trigger for the new game
+      setAnswerResult(null);
+
       setCurrentGame(nextGame);
 
       // Animate in new game with slide effect

@@ -79,7 +79,7 @@ export const WordleGame: React.FC<WordleGameProps> = ({
 
       // Notify parent after slight delay so last row renders first
       setTimeout(
-        () => onFinish(currentInput, isGuessCorrect, newGuesses.length),
+        () => onFinish(currentInput, isGuessCorrect,  newGuesses.length),
         1500
       );
     }
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   actionContainer: {
     width: "100%",
-    marginTop: 16,
+
     alignItems: "center",
   },
   submitButton: {

@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   keyboard: {
     paddingHorizontal: 24,
     paddingVertical: 20,
-    paddingBottom: 40, // Extra padding for safe area
+    paddingBottom: 10, // Extra padding for safe area
   },
   row: {
     flexDirection: "row",
