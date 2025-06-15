@@ -42,9 +42,19 @@ class GameEngine {
   private currentSession: GameSession | null = null;
   private currentGame: CurrentGame | null = null;
 
-  async startNewSession(): Promise<GameSession> {
+  async startNewSession(forcedGameType?: string): Promise<GameSession> {
     const sessionId = await databaseService.createSession();
-    const availableGames = await databaseService.getGamesByType();
+    let availableGames = await databaseService.getGamesByType();
+
+    if (forcedGameType) {
+      availableGames = availableGames.filter(
+        (g) => g.type === forcedGameType
+      );
+
+      if (availableGames.length === 0) {
+        throw new Error(`Game type '${forcedGameType}' not found in database`);
+      }
+    }
     
     console.log('Available games:', availableGames);
     

@@ -406,13 +406,6 @@ export default function ResultScreen() {
             iconName="home"
             style={styles.secondaryButton}
           />
-          <MinimalButton
-            title="View Mistakes"
-            onPress={() => router.push("/mistakes" as any)}
-            variant="secondary"
-            iconName="analytics"
-            style={styles.secondaryButton}
-          />
         </View>
       </Animated.View>
     </SafeAreaView>
@@ -595,6 +588,7 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     paddingBottom: 40,
+
     gap: 12,
   },
   primaryButton: {

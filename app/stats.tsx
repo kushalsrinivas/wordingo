@@ -262,7 +262,7 @@ export default function StatsScreen() {
           <MinimalButton
             title="Back to Home"
             onPress={goBack}
-            variant="secondary"
+            variant="accent"
             style={styles.backHomeButton}
           />
         </View>

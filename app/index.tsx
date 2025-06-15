@@ -9,6 +9,7 @@ import {
   Animated,
   Dimensions,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -67,101 +68,130 @@ export default function HomeScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Animated.View
-        style={[
-          styles.content,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          },
-        ]}
+        style={{
+          flex: 1,
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Wordingo</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Challenge Your Mind
-          </Text>
-        </View>
-
-        {/* Stats Section */}
-        <View style={styles.statsSection}>
-          <View style={styles.statsGrid}>
-            <GlassCard style={styles.statCard}>
-              <View style={styles.statContent}>
-                <Text style={[styles.statNumber, { color: colors.text }]}>
-                  {userStats?.daily_streak || 0}
-                </Text>
-                <Text
-                  style={[styles.statLabel, { color: colors.textSecondary }]}
-                >
-                  Daily Streak
-                </Text>
-                <View
-                  style={[styles.statIcon, { backgroundColor: colors.text }]}
-                />
-              </View>
-            </GlassCard>
-
-            <GlassCard style={styles.statCard}>
-              <View style={styles.statContent}>
-                <Text style={[styles.statNumber, { color: colors.text }]}>
-                  {userStats?.longest_streak || 0}
-                </Text>
-                <Text
-                  style={[styles.statLabel, { color: colors.textSecondary }]}
-                >
-                  Best Score
-                </Text>
-                <View
-                  style={[
-                    styles.statIcon,
-                    styles.statIconSquare,
-                    { backgroundColor: colors.text },
-                  ]}
-                />
-              </View>
-            </GlassCard>
-          </View>
-        </View>
-
-        {/* Main Action */}
-        <View style={styles.mainAction}>
-          <MinimalButton
-            title="Start Game"
-            onPress={startGame}
-            variant="accent"
-            style={styles.primaryButton}
-          />
-        </View>
-
-        {/* Secondary Actions */}
-        <View style={styles.secondaryActions}>
-          <MinimalButton
-            title="View Stats"
-            onPress={viewStats}
-            variant="primary"
-            style={styles.secondaryButton}
-          />
-          <MinimalButton
-            title="How to Play"
-            onPress={howToPlay}
-            variant="primary"
-            style={styles.secondaryButton}
-          />
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.textTertiary }]}>
-            Total Games: {userStats?.total_games || 0}
-          </Text>
-          {userStats?.last_played && (
-            <Text style={[styles.footerText, { color: colors.textTertiary }]}>
-              Last Played:{" "}
-              {new Date(userStats.last_played).toLocaleDateString()}
+        <ScrollView
+          style={styles.scrollContainer}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: colors.text }]}>Wordingo</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              Challenge Your Mind
             </Text>
+          </View>
+
+          {/* Stats Section */}
+          <View style={styles.statsSection}>
+            <View style={styles.statsGrid}>
+              <GlassCard style={styles.statCard}>
+                <View style={styles.statContent}>
+                  <Text style={[styles.statNumber, { color: colors.text }]}>
+                    {userStats?.daily_streak || 0}
+                  </Text>
+                  <Text
+                    style={[styles.statLabel, { color: colors.textSecondary }]}
+                  >
+                    Daily Streak
+                  </Text>
+                  <View
+                    style={[styles.statIcon, { backgroundColor: colors.text }]}
+                  />
+                </View>
+              </GlassCard>
+
+              <GlassCard style={styles.statCard}>
+                <View style={styles.statContent}>
+                  <Text style={[styles.statNumber, { color: colors.text }]}>
+                    {userStats?.longest_streak || 0}
+                  </Text>
+                  <Text
+                    style={[styles.statLabel, { color: colors.textSecondary }]}
+                  >
+                    Best Score
+                  </Text>
+                  <View
+                    style={[
+                      styles.statIcon,
+                      styles.statIconSquare,
+                      { backgroundColor: colors.text },
+                    ]}
+                  />
+                </View>
+              </GlassCard>
+            </View>
+          </View>
+
+          {/* Main Action */}
+          <View style={styles.mainAction}>
+            <MinimalButton
+              title="Start Game"
+              onPress={startGame}
+              variant="accent"
+              style={styles.primaryButton}
+            />
+          </View>
+
+          {/* Secondary Actions */}
+          <View style={styles.secondaryActions}>
+            <MinimalButton
+              title="View Stats"
+              onPress={viewStats}
+              variant="primary"
+              style={styles.secondaryButton}
+            />
+            <MinimalButton
+              title="How to Play"
+              onPress={howToPlay}
+              variant="primary"
+              style={styles.secondaryButton}
+            />
+          </View>
+
+          {/* Debug Menu (only visible in development) */}
+          {__DEV__ && (
+            <View style={styles.debugSection}>
+              <Text style={[styles.debugTitle, { color: colors.text }]}>
+                Debug Games
+              </Text>
+              {[
+                { label: "Anagram", type: "anagram" },
+                { label: "Association", type: "association" },
+                { label: "Wordle", type: "wordle" },
+                { label: "Spelling", type: "spelling" },
+                { label: "Synonym", type: "synonym" },
+                { label: "Odd One Out", type: "odd_one_out" },
+              ].map((g) => (
+                <MinimalButton
+                  key={g.type}
+                  title={g.label}
+                  onPress={() => router.push(`/game?type=${g.type}`)}
+                  variant="primary"
+                  style={styles.debugButton}
+                />
+              ))}
+            </View>
           )}
-        </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: colors.textTertiary }]}>
+              Total Games: {userStats?.total_games || 0}
+            </Text>
+            {userStats?.last_played && (
+              <Text style={[styles.footerText, { color: colors.textTertiary }]}>
+                Last Played:{" "}
+                {new Date(userStats.last_played).toLocaleDateString()}
+              </Text>
+            )}
+          </View>
+        </ScrollView>
       </Animated.View>
     </SafeAreaView>
   );
@@ -176,6 +206,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 60,
     paddingBottom: 40,
+  },
+  scrollContainer: {
+    overflow: "scroll",
+    flex: 1,
   },
   header: {
     alignItems: "center",
@@ -257,5 +291,18 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_300Light",
     letterSpacing: 0.3,
     marginVertical: 2,
+  },
+  debugSection: {
+    marginBottom: 40,
+    overflow: "scroll",
+    gap: 12,
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    marginBottom: 8,
+  },
+  debugButton: {
+    width: "100%",
   },
 });

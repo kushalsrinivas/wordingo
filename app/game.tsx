@@ -6,7 +6,7 @@ import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { CurrentGame, gameEngine, GameSession } from "@/services/gameEngine";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -38,6 +38,9 @@ export default function GameScreen() {
   const [slideAnim] = useState(new Animated.Value(0));
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
+
+  // Read URL param (?type=gameType) to force a single game for debugging
+  const { type: forcedGameType } = useLocalSearchParams<{ type?: string }>();
 
   useEffect(() => {
     initializeGame();
@@ -85,7 +88,9 @@ export default function GameScreen() {
       // Ensure database is ready
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const newSession = await gameEngine.startNewSession();
+      const newSession = await gameEngine.startNewSession(
+        forcedGameType as string | undefined
+      );
       console.log("New session created:", newSession);
 
       setSession(newSession);
