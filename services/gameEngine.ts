@@ -16,6 +16,28 @@ export interface CurrentGame {
   startTime: number;
 }
 
+// -------------------------------
+// Static list of 5-letter words for Wordle rounds.
+// You can expand this as needed – it just has to contain valid 5-letter English words.
+const WORDLE_WORDS = [
+  'apple',
+  'crane',
+  'slate',
+  'ocean',
+  'zesty',
+  'lunar',
+  'brick',
+  'candy',
+  'flame',
+  'grind',
+  'plant',
+  'honey',
+  'frost',
+  'glass',
+  'cloud',
+];
+// -------------------------------
+
 class GameEngine {
   private currentSession: GameSession | null = null;
   private currentGame: CurrentGame | null = null;
@@ -89,7 +111,30 @@ class GameEngine {
 
     console.log('Difficulty level:', difficulty);
 
-    // Get a random question for this game type and difficulty
+    // Special handling for Wordle – we generate a random 5-letter word from our list instead of pulling from DB
+    if (selectedGame.type === 'wordle') {
+      const randomWord = WORDLE_WORDS[Math.floor(Math.random() * WORDLE_WORDS.length)];
+
+      this.currentGame = {
+        game: selectedGame,
+        question: {
+          id: -1,
+          game_type: 'wordle',
+          question: 'Guess the 5-letter word',
+          answer: randomWord,
+          difficulty,
+        } as any,
+        startTime: Date.now(),
+      };
+
+      // Mark this game type as played in current round
+      this.currentSession.gamesPlayedInRound.push(selectedGame.type);
+
+      console.log('Generated Wordle word:', randomWord);
+      return this.currentGame;
+    }
+
+    // For all other game types, pull a question from the database as before
     const questions = await databaseService.getWordBankByType(selectedGame.type, difficulty);
     
     console.log(`Questions for ${selectedGame.type} at difficulty ${difficulty}:`, questions.length);
@@ -270,6 +315,7 @@ class GameEngine {
       
       case 'fill_blanks':
       case 'spelling':
+      case 'wordle':
         // For text input, exact match required
         return normalizedUser === normalizedCorrect;
       

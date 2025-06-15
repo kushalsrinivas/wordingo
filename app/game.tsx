@@ -1,6 +1,7 @@
 import { CustomKeyboard } from "@/components/ui/CustomKeyboard";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { MinimalButton } from "@/components/ui/MinimalButton";
+import { WordleGame } from "@/components/ui/WordleGame";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { CurrentGame, gameEngine, GameSession } from "@/services/gameEngine";
@@ -168,7 +169,6 @@ export default function GameScreen() {
 
     const answer =
       currentGame.game.type === "anagram" ||
-      currentGame.game.type === "fill_blanks" ||
       currentGame.game.type === "spelling"
         ? userAnswer
         : selectedOption;
@@ -228,8 +228,8 @@ export default function GameScreen() {
         return "Anagram Solver";
       case "association":
         return "Word Association";
-      case "fill_blanks":
-        return "Fill the Blanks";
+      case "wordle":
+        return "Wordle";
       case "spelling":
         return "Spelling Challenge";
       default:
@@ -243,8 +243,8 @@ export default function GameScreen() {
         return "Rearrange the letters to form a word";
       case "association":
         return "Find the opposite or related word";
-      case "fill_blanks":
-        return "Complete the sentence";
+      case "wordle":
+        return "Guess the 5-letter word";
       case "spelling":
         return "Spell the word correctly";
       default:
@@ -258,8 +258,8 @@ export default function GameScreen() {
         return "🔤";
       case "association":
         return "🔗";
-      case "fill_blanks":
-        return "📝";
+      case "wordle":
+        return "🟩";
       case "spelling":
         return "✏️";
       default:
@@ -312,9 +312,7 @@ export default function GameScreen() {
         </View>
 
         <View style={styles.answerContainer}>
-          {game.type === "anagram" ||
-          game.type === "fill_blanks" ||
-          game.type === "spelling" ? (
+          {game.type === "anagram" || game.type === "spelling" ? (
             <View style={styles.textInputContainer}>
               <LinearGradient
                 colors={[
@@ -344,6 +342,11 @@ export default function GameScreen() {
                 </GlassCard>
               </LinearGradient>
             </View>
+          ) : game.type === "wordle" ? (
+            <WordleGame
+              secretWord={question.answer}
+              onFinish={handleWordleFinish}
+            />
           ) : (
             renderMultipleChoice()
           )}
@@ -450,11 +453,7 @@ export default function GameScreen() {
   };
 
   const isTextBasedGame = (gameType: string) => {
-    return (
-      gameType === "anagram" ||
-      gameType === "fill_blanks" ||
-      gameType === "spelling"
-    );
+    return gameType === "anagram" || gameType === "spelling";
   };
 
   const canSubmit = () => {
@@ -463,6 +462,39 @@ export default function GameScreen() {
       return userAnswer.trim().length > 0;
     }
     return selectedOption.trim().length > 0;
+  };
+
+  const handleWordleFinish = async (
+    finalGuess: string,
+    _isCorrect: boolean
+  ) => {
+    if (!currentGame) return;
+    if (isSubmitting || answerResult) return;
+
+    try {
+      setIsSubmitting(true);
+
+      // Submit the final guess to the game engine so session stats stay consistent
+      const result = await gameEngine.submitAnswer(finalGuess);
+
+      setAnswerResult({
+        isCorrect: result.isCorrect,
+        correctAnswer: result.correctAnswer,
+      });
+
+      // Small delay to let the user see feedback inside grid first
+      setTimeout(() => {
+        if (result.isCorrect) {
+          loadNextGame();
+        } else {
+          router.replace("/result");
+        }
+      }, 1500);
+    } catch (error) {
+      console.error("Failed to submit Wordle result", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -573,7 +605,7 @@ export default function GameScreen() {
         {/* Game Content */}
         <View style={styles.gameContainer}>{renderGameContent()}</View>
 
-        {/* Custom Keyboard - Only show for text-based games */}
+        {/* Custom Keyboard - Only show for eligible game types */}
         {currentGame && isTextBasedGame(currentGame.game.type) && (
           <CustomKeyboard onKeyPress={handleKeyPress} onDelete={handleDelete} />
         )}
@@ -581,22 +613,24 @@ export default function GameScreen() {
         {/* Submit Button or Feedback */}
         <View style={styles.submitContainer}>
           {!answerResult ? (
-            <LinearGradient
-              colors={
-                canSubmit() && !isSubmitting
-                  ? [colors.highlight, colors.highlight + "CC"]
-                  : ["rgba(128, 128, 128, 0.3)", "rgba(128, 128, 128, 0.2)"]
-              }
-              style={styles.submitGradient}
-            >
-              <MinimalButton
-                title={isSubmitting ? "Submitting..." : "Submit Answer"}
-                onPress={submitAnswer}
-                variant="primary"
-                disabled={isSubmitting || !canSubmit()}
-                style={styles.submitButton}
-              />
-            </LinearGradient>
+            currentGame && currentGame.game.type !== "wordle" ? (
+              <LinearGradient
+                colors={
+                  canSubmit() && !isSubmitting
+                    ? [colors.highlight, colors.highlight + "CC"]
+                    : ["rgba(128, 128, 128, 0.3)", "rgba(128, 128, 128, 0.2)"]
+                }
+                style={styles.submitGradient}
+              >
+                <MinimalButton
+                  title={isSubmitting ? "Submitting..." : "Submit Answer"}
+                  onPress={submitAnswer}
+                  variant="primary"
+                  disabled={isSubmitting || !canSubmit()}
+                  style={styles.submitButton}
+                />
+              </LinearGradient>
+            ) : null
           ) : (
             <View style={styles.feedbackContainer}>
               <LinearGradient

@@ -129,7 +129,7 @@ export default function HomeScreen() {
           <MinimalButton
             title="Start Game"
             onPress={startGame}
-            variant="primary"
+            variant="accent"
             style={styles.primaryButton}
           />
         </View>

@@ -46,13 +46,14 @@ const gameTypes: GameType[] = [
     ],
   },
   {
-    title: "Fill in the Blanks",
-    description: "Complete the sentence by filling in the missing word.",
-    example: "The cat sat on the ___ → mat",
+    title: "Wordle",
+    description:
+      "Guess the secret 5-letter word in 6 tries. After each guess you'll see colored feedback.",
+    example: "Secret word: CRANE  |  Guess: SLATE → S⬜ L⬜ A🟩 T⬜ E🟩",
     tips: [
-      "Read the sentence carefully",
-      "Think about what makes sense",
-      "Consider grammar and context",
+      "Start with common vowels and consonants",
+      "Use the color feedback to eliminate letters",
+      "Think strategically – each guess should give you new information",
     ],
   },
   {

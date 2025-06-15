@@ -131,7 +131,7 @@ class DatabaseService {
       const gameTypes = [
         { name: 'Anagram Solver', description: 'Rearrange letters to form a word', type: 'anagram' },
         { name: 'Word Association', description: 'Find the opposite or related word', type: 'association' },
-        { name: 'Fill in the Blanks', description: 'Complete the sentence', type: 'fill_blanks' },
+        { name: 'Wordle', description: 'Guess the 5-letter word', type: 'wordle' },
         { name: 'Odd One Out', description: 'Find the word that doesn\'t belong', type: 'odd_one_out' },
         { name: 'Synonym Match', description: 'Find the word with similar meaning', type: 'synonym' },
         { name: 'Spelling Bee', description: 'Spell the word correctly', type: 'spelling' }
@@ -189,15 +189,13 @@ class DatabaseService {
       { game_type: 'association', question: 'Abundant', answer: 'Scarce', options: JSON.stringify(['Scarce', 'Plenty', 'Rich', 'Full']), difficulty: 2 },
       { game_type: 'association', question: 'Ancient', answer: 'Modern', options: JSON.stringify(['Modern', 'Old', 'Historic', 'Vintage']), difficulty: 2 },
       
-      // Fill in the Blanks - Difficulty 1
-      { game_type: 'fill_blanks', question: 'The cat sat on the ___', answer: 'mat', difficulty: 1 },
-      { game_type: 'fill_blanks', question: 'I brush my ___ every morning', answer: 'teeth', difficulty: 1 },
-      { game_type: 'fill_blanks', question: 'The sun rises in the ___', answer: 'east', difficulty: 1 },
-      { game_type: 'fill_blanks', question: 'Birds fly in the ___', answer: 'sky', difficulty: 1 },
+      // Wordle - Difficulty 1
+      { game_type: 'wordle', question: 'The color of grass', answer: 'green', difficulty: 1 },
+      { game_type: 'wordle', question: 'A vehicle with four wheels', answer: 'car', difficulty: 1 },
       
-      // Fill in the Blanks - Difficulty 2
-      { game_type: 'fill_blanks', question: 'The ___ of the mountain was covered in snow', answer: 'peak', difficulty: 2 },
-      { game_type: 'fill_blanks', question: 'She showed great ___ during the difficult times', answer: 'courage', difficulty: 2 },
+      // Wordle - Difficulty 2
+      { game_type: 'wordle', question: 'The study of living organisms', answer: 'biology', difficulty: 2 },
+      { game_type: 'wordle', question: 'A person who designs buildings', answer: 'architect', difficulty: 2 },
       
       // Odd One Out - Difficulty 1
       { game_type: 'odd_one_out', question: 'Apple, Orange, Car, Banana', answer: 'Car', options: JSON.stringify(['Apple', 'Orange', 'Car', 'Banana']), difficulty: 1 },
