@@ -81,7 +81,7 @@ export default function HomeScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.text }]}>Wordingo</Text>
+            <Text style={[styles.title, { color: colors.text }]}>WORDEL</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Challenge Your Mind
             </Text>
