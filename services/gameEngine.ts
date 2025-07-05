@@ -2,11 +2,10 @@ import { databaseService } from './database';
 
 export interface GameSession {
   sessionId: number;
-  currentRound: number;
   currentDifficulty: DifficultyMode;
   currentStreak: number;
   score: number;
-  history: RoundLog[];
+  history: GameLog[];
   startTime: number;
   isActive: boolean;
 }
@@ -40,9 +39,9 @@ const WORDLE_WORDS = [
   'cloud',
 ];
 
-type DifficultyMode = 'jumble' | 'standard' | 'sudden';
+type DifficultyMode = 'jumble' | 'standard';
 
-interface RoundLog {
+interface GameLog {
   word: string;
   difficulty: DifficultyMode;
   won: boolean;
@@ -55,15 +54,9 @@ class GameEngine {
   private currentGame: CurrentGame | null = null;
   private wordleGameId: number | null = null;
 
-  private readonly difficulties: DifficultyMode[] = ['jumble', 'standard', 'sudden'];
+  private readonly difficulties: DifficultyMode[] = ['jumble', 'standard'];
 
-  private pickNextDifficulty(prev?: DifficultyMode): DifficultyMode {
-    let next: DifficultyMode;
-    do {
-      next = this.difficulties[Math.floor(Math.random() * this.difficulties.length)];
-    } while (next === prev);
-    return next;
-  }
+
 
   private shuffleWord(word: string): string {
     const arr = word.split('');
@@ -86,10 +79,12 @@ class GameEngine {
     if (!wordleGame) throw new Error('Wordle game type not found in DB');
     this.wordleGameId = wordleGame.id;
     
+    // Start with a random difficulty
+    const initialDifficulty = this.difficulties[Math.floor(Math.random() * this.difficulties.length)];
+    
     this.currentSession = {
       sessionId,
-      currentRound: 1,
-      currentDifficulty: 'jumble',
+      currentDifficulty: initialDifficulty,
       currentStreak: 0,
       score: 0,
       history: [],
@@ -109,13 +104,13 @@ class GameEngine {
       return null;
     }
 
-    // Pick next difficulty randomly (no repeat)
-    const nextDifficulty = this.pickNextDifficulty(this.currentSession.currentDifficulty);
+    // Pick next difficulty randomly (allowing repeats for truly random gameplay)
+    const nextDifficulty = this.difficulties[Math.floor(Math.random() * this.difficulties.length)];
     this.currentSession.currentDifficulty = nextDifficulty;
 
-    // Prepare round params
+    // Prepare game params
     const secretWord = WORDLE_WORDS[Math.floor(Math.random() * WORDLE_WORDS.length)];
-    const maxGuesses = nextDifficulty === 'sudden' ? 3 : 6;
+    const maxGuesses = nextDifficulty === 'jumble' ? 3 : 6;
     const jumbleClue = nextDifficulty === 'jumble' ? this.shuffleWord(secretWord) : undefined;
 
     this.currentGame = {
@@ -141,9 +136,8 @@ class GameEngine {
 
     // Determine points
     let basePoints = 0;
-    if (this.currentGame.difficulty === 'jumble') basePoints = 75;
+    if (this.currentGame.difficulty === 'jumble') basePoints = 150; // Higher points for jumble (3 guesses + clue)
     else if (this.currentGame.difficulty === 'standard') basePoints = 100;
-    else basePoints = 150;
 
     // guessesUsed will be passed separately by UI, but for DB we set 0.
 
@@ -155,7 +149,8 @@ class GameEngine {
         this.currentSession.sessionId,
         this.wordleGameId,
         isCorrect,
-        timeTaken
+        timeTaken,
+        this.currentGame.difficulty
       );
     }
 
@@ -242,23 +237,39 @@ class GameEngine {
 
   async getSessionSummary(sessionId: number) {
     const results = await databaseService.getSessionResults(sessionId);
-    const gamesByType = await databaseService.getGamesByType();
     
+    // Create breakdown by difficulty
+    const difficultyBreakdown = [
+      {
+        gameName: 'Standard Mode',
+        played: results.filter(r => r.difficulty === 'standard').length,
+        correct: results.filter(r => r.difficulty === 'standard' && r.is_correct).length,
+        averageTime: 0
+      },
+      {
+        gameName: 'Jumble Mode',
+        played: results.filter(r => r.difficulty === 'jumble').length,
+        correct: results.filter(r => r.difficulty === 'jumble' && r.is_correct).length,
+        averageTime: 0
+      }
+    ];
+
+    // Calculate average times
+    const standardResults = results.filter(r => r.difficulty === 'standard');
+    const jumbleResults = results.filter(r => r.difficulty === 'jumble');
+    
+    difficultyBreakdown[0].averageTime = standardResults.length > 0 ? 
+      standardResults.reduce((sum, r) => sum + r.time_taken, 0) / standardResults.length : 0;
+    
+    difficultyBreakdown[1].averageTime = jumbleResults.length > 0 ? 
+      jumbleResults.reduce((sum, r) => sum + r.time_taken, 0) / jumbleResults.length : 0;
+
     const summary = {
       totalGames: results.length,
       correctAnswers: results.filter(r => r.is_correct).length,
       incorrectAnswers: results.filter(r => !r.is_correct).length,
       averageTime: results.length > 0 ? results.reduce((sum, r) => sum + r.time_taken, 0) / results.length : 0,
-      gameBreakdown: gamesByType.map(game => {
-        const gameResults = results.filter(r => r.game_id === game.id);
-        return {
-          gameName: game.name,
-          played: gameResults.length,
-          correct: gameResults.filter(r => r.is_correct).length,
-          averageTime: gameResults.length > 0 ? 
-            gameResults.reduce((sum, r) => sum + r.time_taken, 0) / gameResults.length : 0
-        };
-      }).filter(g => g.played > 0)
+      gameBreakdown: difficultyBreakdown.filter(g => g.played > 0)
     };
 
     return summary;

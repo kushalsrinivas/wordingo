@@ -35,31 +35,7 @@ interface Rule {
 
 const gameTypes: GameType[] = [
   {
-    title: "Anagram Solver",
-    description: "Rearrange the given letters to form a valid word.",
-    example: "LISTEN → SILENT",
-    icon: "shuffle",
-    color: "#FF6B6B",
-    tips: [
-      "Look for common letter patterns",
-      "Try different combinations systematically",
-      "Think of words that use all the letters",
-    ],
-  },
-  {
-    title: "Word Association",
-    description: "Find the word that has the opposite or related meaning.",
-    example: "Hot → Cold (opposite)",
-    icon: "link",
-    color: "#4ECDC4",
-    tips: [
-      "Think about antonyms (opposites)",
-      "Consider related concepts",
-      "Eliminate obviously wrong choices",
-    ],
-  },
-  {
-    title: "Wordle",
+    title: "Wordle - Standard Mode",
     description:
       "Guess the secret 5-letter word in 6 tries. After each guess you'll see colored feedback.",
     example: "Secret word: CRANE  |  Guess: SLATE → S⬜ L⬜ A🟩 T⬜ E🟩",
@@ -72,15 +48,16 @@ const gameTypes: GameType[] = [
     ],
   },
   {
-    title: "Spelling Challenge",
-    description: "Spell the word correctly based on its definition.",
-    example: "A large African animal with a trunk → elephant",
-    icon: "text",
-    color: "#96CEB4",
+    title: "Wordle - Jumble Mode",
+    description:
+      "Guess the secret 5-letter word in only 3 tries, but you get a jumbled clue to help you!",
+    example: "Jumbled clue: NACER → Secret word: CRANE",
+    icon: "shuffle",
+    color: "#FF6B6B",
     tips: [
-      "Sound out the word in your head",
-      "Think about common spelling patterns",
-      "Break complex words into parts",
+      "Use the jumbled letters as your starting point",
+      "Think of common words that use those exact letters",
+      "You have fewer guesses, so make each one count",
     ],
   },
 ];
@@ -98,8 +75,8 @@ const gameRules: Rule[] = [
   },
   {
     icon: "trending-up",
-    title: "Progressive Difficulty",
-    description: "Difficulty increases with each round you complete",
+    title: "Random Difficulty",
+    description: "Each game presents a random difficulty level for variety",
   },
   {
     icon: "close-circle",
@@ -250,7 +227,7 @@ export default function HowToPlayScreen() {
             <Text
               style={[styles.sectionSubtitle, { color: colors.textSecondary }]}
             >
-              Master these four different word challenges
+              Master these two different Wordle challenges
             </Text>
 
             {gameTypes.map((gameType, index) => (

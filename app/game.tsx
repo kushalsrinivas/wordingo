@@ -115,7 +115,7 @@ export default function GameScreen() {
         return;
       }
 
-      // Clear previous round result so onFinish can trigger for the new game
+      // Clear previous game result so onFinish can trigger for the new game
       setAnswerResult(null);
 
       setCurrentGame(nextGame);
@@ -245,7 +245,6 @@ export default function GameScreen() {
         <View style={styles.gameHeader}>
           <Text style={[styles.gameTitle, { color: colors.text }]}>
             {" "}
-            Round {session?.currentRound} –{" "}
             {currentGame.difficulty.toUpperCase()}{" "}
           </Text>
           {currentGame.jumbleClue && (
@@ -319,20 +318,20 @@ export default function GameScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.roundContainer}>
-              <Text style={[styles.roundText, { color: colors.text }]}>
-                Round {session?.currentRound}
+            <View style={styles.gameInfoContainer}>
+              <Text style={[styles.gameInfoText, { color: colors.text }]}>
+                Endless Mode
               </Text>
               <View
                 style={[
-                  styles.roundBadge,
+                  styles.gameInfoBadge,
                   { backgroundColor: colors.highlight + "20" },
                 ]}
               >
                 <Text
-                  style={[styles.roundBadgeText, { color: colors.highlight }]}
+                  style={[styles.gameInfoBadgeText, { color: colors.highlight }]}
                 >
-                  {session?.currentRound}
+                  ∞
                 </Text>
               </View>
             </View>
@@ -405,23 +404,23 @@ const styles = StyleSheet.create({
   headerRight: {
     alignItems: "flex-end",
   },
-  roundContainer: {
+  gameInfoContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
   },
-  roundText: {
+  gameInfoText: {
     fontSize: 20,
     fontFamily: "Inter_700Bold",
     letterSpacing: -0.3,
     marginRight: 12,
   },
-  roundBadge: {
+  gameInfoBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
-  roundBadgeText: {
+  gameInfoBadgeText: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     letterSpacing: 0.5,

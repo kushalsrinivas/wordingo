@@ -268,7 +268,7 @@ export default function ResultScreen() {
                       { color: colors.textSecondary },
                     ]}
                   >
-                    Rounds
+                    Games
                   </Text>
                 </View>
                 {sessionInfo && (

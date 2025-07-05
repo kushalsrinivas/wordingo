@@ -13,7 +13,6 @@ export interface Session {
   end_time?: string;
   score: number;
   streak: number;
-  round: number;
 }
 
 export interface GameResult {
@@ -22,6 +21,7 @@ export interface GameResult {
   game_id: number;
   is_correct: boolean;
   time_taken: number;
+  difficulty?: string;
 }
 
 export interface UserStats {
@@ -79,8 +79,7 @@ class DatabaseService {
         start_time TEXT NOT NULL,
         end_time TEXT,
         score INTEGER DEFAULT 0,
-        streak INTEGER DEFAULT 0,
-        round INTEGER DEFAULT 1
+        streak INTEGER DEFAULT 0
       );
 
       CREATE TABLE IF NOT EXISTS game_results (
@@ -89,6 +88,7 @@ class DatabaseService {
         game_id INTEGER NOT NULL,
         is_correct BOOLEAN NOT NULL,
         time_taken INTEGER NOT NULL,
+        difficulty TEXT,
         FOREIGN KEY (session_id) REFERENCES sessions (id),
         FOREIGN KEY (game_id) REFERENCES games (id)
       );
@@ -110,6 +110,16 @@ class DatabaseService {
         difficulty INTEGER DEFAULT 1
       );
     `);
+
+    // Add difficulty column if it doesn't exist (for existing databases)
+    try {
+      await this.db.execAsync(`
+        ALTER TABLE game_results ADD COLUMN difficulty TEXT;
+      `);
+    } catch (error) {
+      // Column already exists, ignore error
+      console.log('Difficulty column already exists or could not be added');
+    }
   }
 
   private async seedInitialData() {
@@ -248,7 +258,7 @@ class DatabaseService {
   async createSession(): Promise<number> {
     if (!this.db) return 0;
     const result = await this.db.runAsync(
-      'INSERT INTO sessions (start_time, score, streak, round) VALUES (?, 0, 0, 1)',
+      'INSERT INTO sessions (start_time, score, streak) VALUES (?, 0, 0)',
       [new Date().toISOString()]
     );
     return result.lastInsertRowId;
@@ -279,11 +289,11 @@ class DatabaseService {
     ) as WordBankItem[];
   }
 
-  async saveGameResult(sessionId: number, gameId: number, isCorrect: boolean, timeTaken: number) {
+  async saveGameResult(sessionId: number, gameId: number, isCorrect: boolean, timeTaken: number, difficulty?: string) {
     if (!this.db) return;
     await this.db.runAsync(
-      'INSERT INTO game_results (session_id, game_id, is_correct, time_taken) VALUES (?, ?, ?, ?)',
-      [sessionId, gameId, isCorrect, timeTaken]
+      'INSERT INTO game_results (session_id, game_id, is_correct, time_taken, difficulty) VALUES (?, ?, ?, ?, ?)',
+      [sessionId, gameId, isCorrect, timeTaken, difficulty || null]
     );
   }
 
