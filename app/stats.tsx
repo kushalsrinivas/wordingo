@@ -15,18 +15,44 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { BarChart, PieChart } from "react-native-chart-kit";
 
 const { width } = Dimensions.get("window");
 
+interface StatsData {
+  userStats: UserStats | null;
+  overallAccuracy: any;
+  difficultyPerformance: any[];
+  recentSessions: any[];
+  weeklyStats: any[];
+  accuracyOverTime: any[];
+  timeDistribution: any[];
+  gameTypePerformance: any[];
+}
+
 export default function StatsScreen() {
-  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [statsData, setStatsData] = useState<StatsData>({
+    userStats: null,
+    overallAccuracy: {
+      accuracy_percentage: 0,
+      total_games: 0,
+      correct_games: 0,
+    },
+    difficultyPerformance: [],
+    recentSessions: [],
+    weeklyStats: [],
+    accuracyOverTime: [],
+    timeDistribution: [],
+    gameTypePerformance: [],
+  });
+  const [loading, setLoading] = useState(true);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(30));
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
 
   useEffect(() => {
-    loadUserStats();
+    loadAllStats();
 
     // Animate entrance
     Animated.parallel([
@@ -43,12 +69,45 @@ export default function StatsScreen() {
     ]).start();
   }, []);
 
-  const loadUserStats = async () => {
+  const loadAllStats = async () => {
     try {
-      const stats = await databaseService.getUserStats();
-      setUserStats(stats);
+      setLoading(true);
+
+      // Load all statistics in parallel
+      const [
+        userStats,
+        overallAccuracy,
+        difficultyPerformance,
+        recentSessions,
+        weeklyStats,
+        accuracyOverTime,
+        timeDistribution,
+        gameTypePerformance,
+      ] = await Promise.all([
+        databaseService.getUserStats(),
+        databaseService.getOverallAccuracy(),
+        databaseService.getGamePerformanceByDifficulty(),
+        databaseService.getRecentSessions(5),
+        databaseService.getWeeklyStats(),
+        databaseService.getAccuracyOverTime(),
+        databaseService.getTimeDistribution(),
+        databaseService.getGameTypePerformance(),
+      ]);
+
+      setStatsData({
+        userStats,
+        overallAccuracy,
+        difficultyPerformance,
+        recentSessions,
+        weeklyStats,
+        accuracyOverTime,
+        timeDistribution,
+        gameTypePerformance,
+      });
     } catch (error) {
-      console.error("Failed to load user stats:", error);
+      console.error("Failed to load stats:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -103,6 +162,48 @@ export default function StatsScreen() {
     return "Incredible dedication!";
   };
 
+  const formatTime = (ms: number) => {
+    const seconds = Math.round(ms / 1000);
+    return `${seconds}s`;
+  };
+
+  // Chart configuration
+  const chartConfig = {
+    backgroundColor: "transparent",
+    backgroundGradientFrom: colorScheme === "dark" ? "#1e1e1e" : "#ffffff",
+    backgroundGradientTo: colorScheme === "dark" ? "#2a2a2a" : "#f8f8f8",
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
+    labelColor: (opacity = 1) =>
+      colorScheme === "dark"
+        ? `rgba(255, 255, 255, ${opacity})`
+        : `rgba(0, 0, 0, ${opacity})`,
+    style: {
+      borderRadius: 16,
+    },
+    propsForDots: {
+      r: "6",
+      strokeWidth: "2",
+      stroke: "#4ECDC4",
+    },
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: colors.text }]}>
+            Loading comprehensive stats...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const { userStats, overallAccuracy } = statsData;
+
   if (!userStats) {
     return (
       <SafeAreaView
@@ -110,7 +211,7 @@ export default function StatsScreen() {
       >
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: colors.text }]}>
-            Loading stats...
+            No stats available yet. Play some games to see your progress!
           </Text>
         </View>
       </SafeAreaView>
@@ -121,6 +222,8 @@ export default function StatsScreen() {
     userStats.total_games,
     userStats.longest_streak
   );
+
+  const accuracyPercentage = overallAccuracy.accuracy_percentage || 0;
 
   return (
     <SafeAreaView
@@ -197,6 +300,118 @@ export default function StatsScreen() {
             </GlassCard>
           </View>
 
+          {/* Overall Accuracy */}
+          <GlassCard style={styles.accuracyCard}>
+            <View style={styles.accuracyContent}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Overall Accuracy
+              </Text>
+              <Text style={[styles.accuracyPercentage, { color: colors.text }]}>
+                {accuracyPercentage}%
+              </Text>
+              <Text
+                style={[
+                  styles.accuracyDetails,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {overallAccuracy.correct_games} correct out of{" "}
+                {overallAccuracy.total_games} games
+              </Text>
+            </View>
+          </GlassCard>
+
+          {/* Difficulty Performance Chart */}
+          {statsData.difficultyPerformance.length > 0 && (
+            <GlassCard style={styles.chartCard}>
+              <View style={styles.chartContainer}>
+                <Text style={[styles.chartTitle, { color: colors.text }]}>
+                  Accuracy by Difficulty
+                </Text>
+                <BarChart
+                  data={{
+                    labels: statsData.difficultyPerformance.map(
+                      (item) => item.difficulty || "Unknown"
+                    ),
+                    datasets: [
+                      {
+                        data: statsData.difficultyPerformance.map(
+                          (item) => item.accuracy_percentage || 0
+                        ),
+                      },
+                    ],
+                  }}
+                  width={width - 80}
+                  height={200}
+                  yAxisLabel=""
+                  yAxisSuffix="%"
+                  chartConfig={chartConfig}
+                  style={styles.chart}
+                />
+              </View>
+            </GlassCard>
+          )}
+
+          {/* Time Distribution Chart */}
+          {statsData.timeDistribution.length > 0 && (
+            <GlassCard style={styles.chartCard}>
+              <View style={styles.chartContainer}>
+                <Text style={[styles.chartTitle, { color: colors.text }]}>
+                  Response Time Distribution
+                </Text>
+                <PieChart
+                  data={statsData.timeDistribution.map((item, index) => ({
+                    name: item.time_range,
+                    population: item.count,
+                    color: `hsl(${(index * 60) % 360}, 70%, 60%)`,
+                    legendFontColor: colors.textSecondary,
+                    legendFontSize: 12,
+                  }))}
+                  width={width - 80}
+                  height={200}
+                  chartConfig={chartConfig}
+                  accessor="population"
+                  backgroundColor="transparent"
+                  paddingLeft="15"
+                  style={styles.chart}
+                />
+              </View>
+            </GlassCard>
+          )}
+
+          {/* Weekly Activity Chart */}
+          {statsData.weeklyStats.length > 0 && (
+            <GlassCard style={styles.chartCard}>
+              <View style={styles.chartContainer}>
+                <Text style={[styles.chartTitle, { color: colors.text }]}>
+                  Games Played This Week
+                </Text>
+                <BarChart
+                  data={{
+                    labels: statsData.weeklyStats.map((item) =>
+                      new Date(item.date).toLocaleDateString("en-US", {
+                        weekday: "short",
+                      })
+                    ),
+                    datasets: [
+                      {
+                        data: statsData.weeklyStats.map(
+                          (item) => item.total_games || 0
+                        ),
+                      },
+                    ],
+                  }}
+                  width={width - 80}
+                  height={200}
+                  yAxisLabel=""
+                  yAxisSuffix=" games"
+                  chartConfig={chartConfig}
+                  style={styles.chart}
+                />
+              </View>
+            </GlassCard>
+          )}
+
           {/* Daily Streak Section */}
           <GlassCard style={styles.streakCard}>
             <View style={styles.streakContent}>
@@ -220,6 +435,40 @@ export default function StatsScreen() {
               </Text>
             </View>
           </GlassCard>
+
+          {/* Recent Sessions */}
+          {statsData.recentSessions.length > 0 && (
+            <GlassCard style={styles.sessionsCard}>
+              <View style={styles.sessionsContent}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  Recent Sessions
+                </Text>
+                {statsData.recentSessions.map((session, index) => (
+                  <View key={session.id} style={styles.sessionRow}>
+                    <View style={styles.sessionInfo}>
+                      <Text
+                        style={[styles.sessionDate, { color: colors.text }]}
+                      >
+                        {new Date(session.start_time).toLocaleDateString()}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.sessionDetails,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {session.games_played} games • {session.correct_answers}{" "}
+                        correct
+                      </Text>
+                    </View>
+                    <Text style={[styles.sessionScore, { color: colors.text }]}>
+                      {session.score}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </GlassCard>
+          )}
 
           {/* Activity Summary */}
           <GlassCard style={styles.activityCard}>
@@ -405,12 +654,6 @@ const styles = StyleSheet.create({
   activityContent: {
     padding: 24,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: "Inter_500Medium",
-    marginBottom: 20,
-    letterSpacing: 0.2,
-  },
   activityRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -445,5 +688,109 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Inter_400Regular",
     letterSpacing: 0.3,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_500Medium",
+    marginBottom: 20,
+    letterSpacing: 0.2,
+  },
+  accuracyCard: {
+    marginBottom: 20,
+  },
+  accuracyContent: {
+    padding: 28,
+    alignItems: "center",
+  },
+  accuracyDetails: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    marginTop: 10,
+    letterSpacing: 0.2,
+  },
+  accuracyPercentage: {
+    fontSize: 48,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 8,
+    letterSpacing: -1.2,
+  },
+  chartCard: {
+    marginBottom: 20,
+  },
+  chartContainer: {
+    alignItems: "center",
+  },
+  chartTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_500Medium",
+    marginBottom: 15,
+    letterSpacing: 0.2,
+  },
+  chart: {
+    borderRadius: 16,
+  },
+  performanceCard: {
+    marginBottom: 20,
+  },
+  performanceContent: {
+    padding: 28,
+  },
+  performanceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+  },
+  gameTypeName: {
+    fontSize: 16,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.2,
+  },
+  performanceStats: {
+    alignItems: "flex-end",
+  },
+  accuracyText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.2,
+  },
+  timeText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.2,
+  },
+  sessionsCard: {
+    marginBottom: 20,
+  },
+  sessionsContent: {
+    padding: 28,
+  },
+  sessionRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+  },
+  sessionInfo: {
+    flex: 1,
+  },
+  sessionDate: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.2,
+  },
+  sessionDetails: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.2,
+  },
+  sessionScore: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: -0.5,
   },
 });

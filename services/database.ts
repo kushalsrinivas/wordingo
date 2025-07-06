@@ -332,6 +332,182 @@ class DatabaseService {
     }
   }
 
+  // New methods for detailed statistics
+  async getGamePerformanceByDifficulty() {
+    if (!this.db) return [];
+    
+    const query = `
+      SELECT 
+        difficulty,
+        COUNT(*) as total_games,
+        SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct_games,
+        ROUND(AVG(time_taken), 2) as avg_time,
+        MIN(time_taken) as best_time,
+        MAX(time_taken) as worst_time,
+        ROUND(
+          (SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 2
+        ) as accuracy_percentage
+      FROM game_results 
+      WHERE difficulty IS NOT NULL
+      GROUP BY difficulty
+      ORDER BY difficulty
+    `;
+    
+    return await this.db.getAllAsync(query);
+  }
+
+  async getRecentSessions(limit: number = 10) {
+    if (!this.db) return [];
+    
+    const query = `
+      SELECT 
+        s.*,
+        COUNT(gr.id) as games_played,
+        SUM(CASE WHEN gr.is_correct = 1 THEN 1 ELSE 0 END) as correct_answers,
+        ROUND(AVG(gr.time_taken), 2) as avg_time
+      FROM sessions s
+      LEFT JOIN game_results gr ON s.id = gr.session_id
+      WHERE s.end_time IS NOT NULL
+      GROUP BY s.id
+      ORDER BY s.start_time DESC
+      LIMIT ?
+    `;
+    
+    return await this.db.getAllAsync(query, [limit]);
+  }
+
+  async getWeeklyStats() {
+    if (!this.db) return [];
+    
+    const query = `
+      SELECT 
+        DATE(s.start_time) as date,
+        COUNT(DISTINCT s.id) as sessions,
+        COUNT(gr.id) as total_games,
+        SUM(CASE WHEN gr.is_correct = 1 THEN 1 ELSE 0 END) as correct_games,
+        ROUND(AVG(gr.time_taken), 2) as avg_time
+      FROM sessions s
+      LEFT JOIN game_results gr ON s.id = gr.session_id
+      WHERE DATE(s.start_time) >= DATE('now', '-7 days')
+      GROUP BY DATE(s.start_time)
+      ORDER BY date ASC
+    `;
+    
+    return await this.db.getAllAsync(query);
+  }
+
+  async getAccuracyOverTime() {
+    if (!this.db) return [];
+    
+    const query = `
+      SELECT 
+        DATE(s.start_time) as date,
+        COUNT(gr.id) as total_games,
+        SUM(CASE WHEN gr.is_correct = 1 THEN 1 ELSE 0 END) as correct_games,
+        ROUND(
+          (SUM(CASE WHEN gr.is_correct = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(gr.id)), 2
+        ) as accuracy_percentage
+      FROM sessions s
+      JOIN game_results gr ON s.id = gr.session_id
+      WHERE DATE(s.start_time) >= DATE('now', '-30 days')
+      GROUP BY DATE(s.start_time)
+      HAVING COUNT(gr.id) > 0
+      ORDER BY date ASC
+    `;
+    
+    return await this.db.getAllAsync(query);
+  }
+
+  async getTimeDistribution() {
+    if (!this.db) return [];
+    
+    const query = `
+      SELECT 
+        CASE 
+          WHEN time_taken < 5000 THEN 'Under 5s'
+          WHEN time_taken < 10000 THEN '5-10s'
+          WHEN time_taken < 20000 THEN '10-20s'
+          WHEN time_taken < 30000 THEN '20-30s'
+          ELSE 'Over 30s'
+        END as time_range,
+        COUNT(*) as count,
+        SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct_count,
+        ROUND(
+          (SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 2
+        ) as accuracy_percentage
+      FROM game_results
+      WHERE time_taken IS NOT NULL
+      GROUP BY 
+        CASE 
+          WHEN time_taken < 5000 THEN 'Under 5s'
+          WHEN time_taken < 10000 THEN '5-10s'
+          WHEN time_taken < 20000 THEN '10-20s'
+          WHEN time_taken < 30000 THEN '20-30s'
+          ELSE 'Over 30s'
+        END
+      ORDER BY MIN(time_taken)
+    `;
+    
+    return await this.db.getAllAsync(query);
+  }
+
+  async getStreakHistory() {
+    if (!this.db) return [];
+    
+    const query = `
+      SELECT 
+        DATE(start_time) as date,
+        MAX(streak) as max_streak_that_day,
+        COUNT(*) as sessions_played
+      FROM sessions
+      WHERE DATE(start_time) >= DATE('now', '-30 days')
+      GROUP BY DATE(start_time)
+      ORDER BY date ASC
+    `;
+    
+    return await this.db.getAllAsync(query);
+  }
+
+  async getGameTypePerformance() {
+    if (!this.db) return [];
+    
+    const query = `
+      SELECT 
+        g.name as game_name,
+        g.type as game_type,
+        COUNT(gr.id) as total_games,
+        SUM(CASE WHEN gr.is_correct = 1 THEN 1 ELSE 0 END) as correct_games,
+        ROUND(
+          (SUM(CASE WHEN gr.is_correct = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(gr.id)), 2
+        ) as accuracy_percentage,
+        ROUND(AVG(gr.time_taken), 2) as avg_time
+      FROM games g
+      LEFT JOIN game_results gr ON g.id = gr.game_id
+      GROUP BY g.id, g.name, g.type
+      HAVING COUNT(gr.id) > 0
+      ORDER BY accuracy_percentage DESC
+    `;
+    
+    return await this.db.getAllAsync(query);
+  }
+
+  async getOverallAccuracy() {
+    if (!this.db) return { accuracy: 0, total_games: 0, correct_games: 0 };
+    
+    const query = `
+      SELECT 
+        COUNT(*) as total_games,
+        SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct_games,
+        ROUND(
+          (SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 2
+        ) as accuracy_percentage
+      FROM game_results
+    `;
+    
+    const result = await this.db.getFirstAsync(query);
+    return result || { accuracy_percentage: 0, total_games: 0, correct_games: 0 };
+  }
+
   // Debug method to reset database
   async resetDatabase() {
     if (!this.db) return;

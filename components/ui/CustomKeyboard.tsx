@@ -51,7 +51,7 @@ export function CustomKeyboard({ onKeyPress, onDelete }: CustomKeyboardProps) {
   ) => {
     const isPressed = pressedKey === key;
     const keyWidth =
-      (width - 48 - (KEYBOARD_ROWS[0].length - 1) * 6) /
+      (width - 32 - (KEYBOARD_ROWS[0].length - 1) * 4) /
       KEYBOARD_ROWS[0].length;
 
     const keyStyle = {
@@ -92,7 +92,7 @@ export function CustomKeyboard({ onKeyPress, onDelete }: CustomKeyboardProps) {
 
   const renderDeleteKey = () => {
     const isPressed = pressedKey === "DELETE";
-    const deleteKeyWidth = (width - 48 - 6 * 6) / 7; // Slightly wider than regular keys
+    const deleteKeyWidth = (width - 32 - 6 * 4) / 7; // Slightly wider than regular keys
 
     const deleteKeyStyle = {
       ...styles.key,
@@ -152,7 +152,7 @@ export function CustomKeyboard({ onKeyPress, onDelete }: CustomKeyboardProps) {
 
 const styles = StyleSheet.create({
   keyboard: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16, // Reduced from 24 to 16 for wider keys
     paddingVertical: 20,
     paddingBottom: 10, // Extra padding for safe area
   },
@@ -160,14 +160,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     marginBottom: 8,
-    gap: 6,
+    gap: 4, // Reduced from 6 to 4 for wider keys
   },
   keyContainer: {
-    height: 44, // iOS standard touch target
+    height: 56, // Increased from 44 to 56 for larger touch targets
   },
   key: {
     flex: 1,
-    height: 44,
+    height: 44, // Increased from 44 to 56 to match container
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 12,
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   keyText: {
-    fontSize: 14,
+    fontSize: 14, // Increased from 14 to 16 for better visibility
     fontFamily: "Inter_500Medium",
     letterSpacing: 0.5,
     fontWeight: "500",
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     // Additional styling for delete key will be applied dynamically
   },
   deleteKeyText: {
-    fontSize: 18,
+    fontSize: 20, // Increased from 18 to 20 for better visibility
     fontFamily: "Inter_500Medium",
     fontWeight: "500",
   },
